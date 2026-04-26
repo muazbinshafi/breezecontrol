@@ -289,14 +289,17 @@ export class GestureEngine {
     const pinkyPip = lm[18];
     const wrist = lm[0];
 
-    // Apply One-Euro filter independently per axis on landmarks 4 (thumb) and
-    // 8 (index). The filter adapts cutoff to motion speed → still hand = no
-    // jitter, fast hand = no lag.
+    // Apply 3D One-Euro filter to the critical landmarks. Each axis adapts its
+    // cutoff to the motion speed of THAT axis, so micro-tremor (sub-mm) is
+    // killed while real motion passes through with no perceptible lag.
     this.applySmoothingParams();
-    const [tx, ty] = this.fThumb.filter(thumbTip.x, thumbTip.y, tNow);
-    const [, tz] = this.fThumbZ.filter(thumbTip.z, 0, tNow);
-    const [ixs, iys] = this.fIndex.filter(indexTip.x, indexTip.y, tNow);
-    const [, izs] = this.fIndexZ.filter(indexTip.z, 0, tNow);
+    const [tx, ty, tz] = this.fThumb.filter(thumbTip.x, thumbTip.y, thumbTip.z, tNow);
+    const [ixs, iys, izs] = this.fIndex.filter(indexTip.x, indexTip.y, indexTip.z, tNow);
+    // Smooth the reference landmarks too — they feed the hand-scale denominator
+    // for pinch-ratio. Noisy reference = noisy ratio = false-positive clicks.
+    const [imx, imy, imz] = this.fIndexMcp.filter(lm[5].x, lm[5].y, lm[5].z, tNow);
+    const [wx, wy, wz] = this.fWrist.filter(wrist.x, wrist.y, wrist.z, tNow);
+    const [mx, my, mz] = this.fMiddleTip.filter(middleTip.x, middleTip.y, middleTip.z, tNow);
     this.smoothedThumb = [tx, ty, tz];
     this.smoothedIndex = [ixs, iys, izs];
 
