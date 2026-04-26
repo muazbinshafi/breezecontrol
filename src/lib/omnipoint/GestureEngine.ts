@@ -166,9 +166,9 @@ export class GestureEngine {
       numHands: 1,
       runningMode: "VIDEO" as const,
       // Higher thresholds reject low-confidence frames → fewer phantom poses.
-      minHandDetectionConfidence: 0.7,
-      minHandPresenceConfidence: 0.7,
-      minTrackingConfidence: 0.65,
+      minHandDetectionConfidence: 0.5,
+      minHandPresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
     };
     const modelAssetPath =
       "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
