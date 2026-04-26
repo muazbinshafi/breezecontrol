@@ -55,7 +55,7 @@ const Install = () => {
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b hairline px-4 h-14 flex items-center justify-between">
         <Link to="/" className="font-mono text-[11px] tracking-[0.3em] text-muted-foreground hover:text-foreground">
-          ← OMNIPOINT
+          ← BREEZECONTROL
         </Link>
         <span className="font-mono text-[10px] tracking-[0.3em] text-emerald-glow">INSTALL</span>
       </header>

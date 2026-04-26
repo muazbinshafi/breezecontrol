@@ -517,7 +517,7 @@ function MobileSection() {
             </div>
             <div className="absolute inset-0 pt-7 flex flex-col">
               <div className="px-3 py-3 border-b hairline flex items-center justify-between font-mono text-[9px] tracking-[0.25em] text-muted-foreground">
-                <span>OMNIPOINT</span>
+                <span>BREEZECONTROL</span>
                 <span className="text-[hsl(var(--success))]">● LIVE</span>
               </div>
               <div className="flex-1 dot-grid relative">
