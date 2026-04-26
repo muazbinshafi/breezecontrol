@@ -144,13 +144,13 @@
 
   /* Gradient text helpers */
   .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)) 60%, hsl(var(--accent)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)) 55%, hsl(var(--accent)));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .text-emerald-glow {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--primary-glow)));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -236,7 +236,7 @@
       radial-gradient(ellipse 60% 50% at 90% 90%, hsl(var(--accent) / calc(var(--mesh-alpha, 0.10) * 0.8)), transparent 70%);
   }
   .bg-gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)) 60%, hsl(var(--accent)));
   }
   .bg-mesh {
     background-color: hsl(var(--background));
