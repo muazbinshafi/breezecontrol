@@ -3,7 +3,7 @@
 // instantly see if their setup is healthy.
 
 import { useTelemetry } from "@/hooks/useTelemetry";
-import { Activity, Wifi, WifiOff } from "lucide-react";
+import { Activity, Wifi, WifiOff, Crosshair } from "lucide-react";
 
 export function TelemetryQualityBadge() {
   const t = useTelemetry();
