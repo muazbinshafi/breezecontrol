@@ -239,10 +239,23 @@ const Auth = () => {
               minLength={8}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
             />
+            {mode === "signin" && (
+              <div className="flex justify-end -mt-1">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={forgotBusy || cloudDisabled}
+                  className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground hover:text-primary disabled:opacity-50 transition-colors inline-flex items-center gap-1.5"
+                >
+                  {forgotBusy && <Loader2 className="w-3 h-3 animate-spin" />}
+                  FORGOT PASSWORD?
+                </button>
+              </div>
+            )}
             <button
               type="submit"
               disabled={busy}
-              className="w-full h-11 bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-colors"
             >
               {busy ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
