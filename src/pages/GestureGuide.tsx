@@ -4,7 +4,7 @@ import { ThemeSettings, ThemeToggleQuick } from "@/components/ThemeSettings";
 
 const GestureGuide = () => {
   useEffect(() => {
-    document.title = "Gesture Guide — OmniPoint HCI";
+    document.title = "Gesture Guide — BreezeControl";
     const setMeta = (name: string, content: string) => {
       let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
       if (!tag) {
@@ -14,7 +14,7 @@ const GestureGuide = () => {
       }
       tag.content = content;
     };
-    setMeta("description", "Animated guide to OmniPoint hand gestures: cursor, click, drag, scroll, idle and emergency stop.");
+    setMeta("description", "Animated guide to BreezeControl hand gestures: cursor, click, drag, scroll, idle and emergency stop.");
   }, []);
 
   return (
@@ -107,7 +107,7 @@ function Header() {
             <span className="font-mono text-xs text-white font-bold">O</span>
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="font-display text-[15px]">OmniPoint</span>
+            <span className="font-display text-[15px]">BreezeControl</span>
             <span className="font-mono text-[9px] tracking-[0.25em] text-muted-foreground -mt-0.5">GUIDE</span>
           </div>
         </Link>

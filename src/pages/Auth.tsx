@@ -22,10 +22,11 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
   const cloudDisabled = offline || !isSupabaseConfigured;
 
   useEffect(() => {
-    document.title = mode === "signin" ? "Sign in — OmniPoint" : "Create account — OmniPoint";
+    document.title = mode === "signin" ? "Sign in — BreezeControl" : "Create account — BreezeControl";
   }, [mode]);
 
   // Already signed in? Send to demo.
@@ -85,6 +86,31 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (forgotBusy) return;
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      toast({
+        title: "Enter your email first",
+        description: "Type the email above, then tap 'Forgot password' again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setForgotBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotBusy(false);
+    if (error) {
+      toast({ title: "Couldn't send reset email", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: "Check your inbox",
+        description: `We sent a password-reset link to ${email}.`,
+      });
+    }
+  };
+
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-5xl grid lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] gap-8 items-start">
@@ -101,15 +127,15 @@ const Auth = () => {
 
         <div className="order-1 lg:order-2 w-full max-w-md mx-auto lg:mx-0">
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-10 h-10 rounded-lg bg-gradient-primary grid place-items-center shadow-md">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-primary grid place-items-center shadow-lg">
             <Hand className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-display text-xl">OmniPoint</span>
+          <span className="font-display text-xl">BreezeControl</span>
         </div>
 
-        <div className="border border-border bg-card shadow-2xl p-6 sm:p-8">
+        <div className="panel p-6 sm:p-8 rounded-3xl">
           {/* Offline Mode toggle — bypasses Supabase entirely */}
-          <div className="mb-5 flex items-center justify-between gap-3 border border-border bg-background/50 px-3 py-2.5">
+          <div className="mb-5 flex items-center justify-between gap-3 border border-border bg-background/50 px-3 py-2.5 rounded-2xl">
             <div className="flex items-center gap-2 min-w-0">
               <WifiOff className="w-4 h-4 text-muted-foreground shrink-0" />
               <div className="min-w-0">
@@ -143,7 +169,7 @@ const Auth = () => {
           {offline && (
             <button
               onClick={() => navigate("/demo", { replace: true })}
-              className="w-full h-11 mb-4 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+              className="w-full h-11 mb-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
             >
               Enter demo offline
               <ArrowRight className="w-4 h-4" />
@@ -151,7 +177,7 @@ const Auth = () => {
           )}
 
           <fieldset disabled={cloudDisabled} className="contents">
-            <div className="grid grid-cols-2 gap-1 mb-6 border hairline">
+            <div className="grid grid-cols-2 gap-1 mb-6 border hairline rounded-xl overflow-hidden">
               {(["signin", "signup"] as const).map((m) => (
                 <button
                   key={m}
@@ -171,7 +197,7 @@ const Auth = () => {
             <button
               onClick={handleGoogle}
               disabled={busy || cloudDisabled}
-              className="w-full h-11 mb-4 inline-flex items-center justify-center gap-2.5 border border-border bg-background hover:bg-secondary text-foreground font-medium text-sm disabled:opacity-50 transition-colors"
+              className="w-full h-11 mb-4 inline-flex items-center justify-center gap-2.5 rounded-xl border border-border bg-background hover:bg-secondary text-foreground font-medium text-sm disabled:opacity-50 transition-colors"
             >
               <GoogleIcon />
               Continue with Google
@@ -213,10 +239,23 @@ const Auth = () => {
               minLength={8}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
             />
+            {mode === "signin" && (
+              <div className="flex justify-end -mt-1">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={forgotBusy || cloudDisabled}
+                  className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground hover:text-primary disabled:opacity-50 transition-colors inline-flex items-center gap-1.5"
+                >
+                  {forgotBusy && <Loader2 className="w-3 h-3 animate-spin" />}
+                  FORGOT PASSWORD?
+                </button>
+              </div>
+            )}
             <button
               type="submit"
               disabled={busy}
-              className="w-full h-11 bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-colors"
             >
               {busy ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -269,7 +308,7 @@ function Field({
   autoComplete?: string;
 }) {
   return (
-    <label className="flex items-center gap-2 border border-border bg-background h-11 px-3 focus-within:border-primary transition-colors">
+    <label className="flex items-center gap-2 border border-border bg-background h-11 px-3 rounded-xl focus-within:border-primary transition-colors">
       <span className="text-muted-foreground">{icon}</span>
       <input
         type={type}

@@ -9,7 +9,7 @@ import { ThemeSettings, ThemeToggleQuick } from "@/components/ThemeSettings";
 
 const Index = () => {
   useEffect(() => {
-    document.title = "OmniPoint HCI — Touchless Gesture Control for Web, Desktop & Mobile";
+    document.title = "BreezeControl — Touchless Gesture Control for Web, Desktop & Mobile";
     const setMeta = (name: string, content: string, attr: "name" | "property" = "name") => {
       let tag = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
       if (!tag) {
@@ -23,7 +23,7 @@ const Index = () => {
       "description",
       "Control your computer or phone with hand gestures. 60 FPS MediaPipe vision, customizable bindings, paint mode, cross-platform OS bridge, PWA installable. Open source.",
     );
-    setMeta("og:title", "OmniPoint HCI — Touchless Gesture Control", "property");
+    setMeta("og:title", "BreezeControl — Touchless Gesture Control", "property");
     setMeta(
       "og:description",
       "Hand gestures → real cursor. MediaPipe vision · customizable profiles · paint toolbox · cross-platform bridge · installable on phone.",
@@ -60,7 +60,7 @@ function Header() {
             <span className="absolute -inset-0.5 rounded-lg bg-gradient-primary opacity-40 blur-md -z-10" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="font-display text-[15px] text-foreground">OmniPoint</span>
+            <span className="font-display text-[15px] text-foreground">BreezeControl</span>
             <span className="font-mono text-[9px] tracking-[0.25em] text-muted-foreground -mt-0.5">HCI · v2.0</span>
           </div>
         </Link>
@@ -74,7 +74,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <a
-            href="https://github.com/muazbinshafi/airtouch-v3"
+            href="https://github.com/muazbinshafi/airtouch-v8"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
@@ -112,13 +112,13 @@ function Hero() {
               v2 · Customizable gestures · Paint mode · Mobile-ready
             </div>
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl leading-[1.02] text-foreground">
-              Your hands are<br />
-              the new <span className="text-gradient">mouse</span>.
+              Wave hello to your<br />
+              new <span className="text-gradient">cursor</span>.
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed">
-              OmniPoint turns any webcam into a precision input device. Move, click, draw and
-              scroll across your desktop or phone — without touching a thing. Customizable
-              gestures, named profiles, paint toolbox, sub-frame latency.
+              BreezeControl turns any webcam into a friendly, touch-free input device.
+              Pinch to click, point to move, draw in the air — on your laptop or your
+              phone. Soft on the eyes, sharp on the cursor.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link to="/demo" className="btn-primary h-12 px-6 text-sm">
@@ -305,7 +305,7 @@ function WhatsNew() {
       <SectionHead
         eyebrow="What's new"
         title="Built up since v1."
-        subtitle="The latest pass focused on customization, paint, and getting OmniPoint running everywhere."
+        subtitle="The latest pass focused on customization, paint, and getting BreezeControl running everywhere."
       />
       <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {updates.map((u) => (
@@ -340,7 +340,7 @@ function Features() {
   return (
     <section id="features" className="mx-auto max-w-7xl px-6 py-24 lg:py-32">
       <SectionHead
-        eyebrow="Why OmniPoint"
+        eyebrow="Why BreezeControl"
         title="Built for precision, designed for everyone."
         subtitle="A complete vision-to-HID pipeline you can actually use — not a research demo."
       />
@@ -517,7 +517,7 @@ function MobileSection() {
             </div>
             <div className="absolute inset-0 pt-7 flex flex-col">
               <div className="px-3 py-3 border-b hairline flex items-center justify-between font-mono text-[9px] tracking-[0.25em] text-muted-foreground">
-                <span>OMNIPOINT</span>
+                <span>BREEZECONTROL</span>
                 <span className="text-[hsl(var(--success))]">● LIVE</span>
               </div>
               <div className="flex-1 dot-grid relative">
@@ -579,10 +579,10 @@ function Architecture() {
   );
 }
 
-const REPO_BRIDGE = "https://github.com/muazbinshafi/airtouch-v3/tree/main/bridge";
-const REPO_BRIDGE_PY = "https://github.com/muazbinshafi/airtouch-v3/blob/main/bridge/omnipoint_bridge.py";
-const REPO_BRIDGE_REQ = "https://github.com/muazbinshafi/airtouch-v3/blob/main/bridge/requirements.txt";
-const REPO_BRIDGE_README = "https://github.com/muazbinshafi/airtouch-v3/blob/main/bridge/README.md";
+const REPO_BRIDGE = "https://github.com/muazbinshafi/airtouch-v8/tree/main/bridge";
+const REPO_BRIDGE_PY = "https://github.com/muazbinshafi/airtouch-v8/blob/main/bridge/omnipoint_bridge.py";
+const REPO_BRIDGE_REQ = "https://github.com/muazbinshafi/airtouch-v8/blob/main/bridge/requirements.txt";
+const REPO_BRIDGE_README = "https://github.com/muazbinshafi/airtouch-v8/blob/main/bridge/README.md";
 
 function BridgeSection() {
   const platforms = [
@@ -795,10 +795,10 @@ function CTA() {
             Ready when you are
           </div>
           <h2 className="font-display text-3xl sm:text-5xl leading-tight">
-            Stop touching your <span className="text-gradient">mouse</span>.
+            Give your mouse a <span className="text-gradient">break</span>.
           </h2>
           <p className="mt-4 text-muted-foreground text-lg max-w-lg">
-            Try the browser demo in under a minute — no install required.
+            Try the browser demo in under a minute — no install, no signup required.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/demo" className="btn-primary h-12 px-6 text-sm">
@@ -838,7 +838,7 @@ function Footer() {
           <div className="w-7 h-7 rounded-md bg-gradient-primary flex items-center justify-center">
             <Hand className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-display text-sm">OmniPoint HCI</span>
+          <span className="font-display text-sm">BreezeControl</span>
           <span className="text-xs text-muted-foreground">· Open source · MIT</span>
         </div>
         <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
@@ -846,7 +846,7 @@ function Footer() {
           <Link to="/guide" className="hover:text-foreground transition-colors">Guide</Link>
           <Link to="/install" className="hover:text-foreground transition-colors">Install</Link>
           <a href="#quickstart" className="hover:text-foreground transition-colors">Docs</a>
-          <a href="https://github.com/muazbinshafi/airtouch-v3" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+          <a href="https://github.com/muazbinshafi/airtouch-v8" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1.5">
             <Github className="w-4 h-4" /> GitHub
           </a>
         </div>

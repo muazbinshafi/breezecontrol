@@ -19,7 +19,7 @@ const Account = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    document.title = "Account — OmniPoint";
+    document.title = "Account — BreezeControl";
   }, []);
 
   useEffect(() => {
@@ -74,10 +74,10 @@ const Account = () => {
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b hairline px-4 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-gradient-primary grid place-items-center">
-            <Hand className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+          <div className="w-8 h-8 rounded-2xl bg-gradient-primary grid place-items-center shadow-md">
+            <Hand className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-display text-sm">OmniPoint</span>
+          <span className="font-display text-sm">BreezeControl</span>
         </Link>
         <span className="font-mono text-[10px] tracking-[0.3em] text-emerald-glow">ACCOUNT</span>
       </header>
@@ -105,7 +105,7 @@ const Account = () => {
               </div>
             </div>
 
-            <div className="border border-border bg-card p-5 mb-4">
+            <div className="panel p-5 mb-4 rounded-3xl">
               <h2 className="font-mono text-[11px] tracking-[0.3em] text-emerald-glow mb-4">
                 ▸ PROFILE
               </h2>
@@ -119,14 +119,14 @@ const Account = () => {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="mt-3 inline-flex items-center justify-center gap-2 h-10 px-4 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
+                className="mt-3 inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save changes
               </button>
             </div>
 
-            <div className="border border-border bg-card p-5 mb-4">
+            <div className="panel p-5 mb-4 rounded-3xl">
               <h2 className="font-mono text-[11px] tracking-[0.3em] text-emerald-glow mb-3">
                 ▸ CLOUD SYNC
               </h2>
@@ -151,7 +151,7 @@ const Account = () => {
 
             <button
               onClick={handleSignOut}
-              className="w-full h-10 inline-flex items-center justify-center gap-2 border border-destructive/40 text-destructive hover:bg-destructive/10 text-sm font-medium"
+              className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-xl border border-destructive/40 text-destructive hover:bg-destructive/10 text-sm font-medium"
             >
               <LogOut className="w-4 h-4" />
               Sign out
@@ -183,7 +183,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full h-10 px-3 bg-background border border-border focus:border-primary outline-none text-sm text-foreground"
+        className="mt-1 w-full h-10 px-3 bg-background border border-border focus:border-primary rounded-xl outline-none text-sm text-foreground"
       />
     </label>
   );
