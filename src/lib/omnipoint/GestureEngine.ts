@@ -120,17 +120,34 @@ export class GestureEngine {
     this.ctx = ctx;
   }
 
-  /** Map config.smoothingAlpha → One-Euro params for both landmark + cursor. */
+  /**
+   * Map config.smoothingAlpha → One-Euro params for landmarks + cursor.
+   *
+   * Adaptive precision-mode: when the cursor is barely moving (sub-pixel
+   * intent — the user is targeting a small UI element), we crush the cutoff
+   * frequency to lock the cursor in place. As soon as the user moves with
+   * intent, the filter snaps wide-open via beta. This is what gives the
+   * system its "millimeter accuracy" feel — micro-tremor is filtered out
+   * but real micro-motion still passes through.
+   */
   private applySmoothingParams() {
-    const minCutoff = Math.max(0.3, Math.min(6, this.config.smoothingAlpha));
+    const baseCutoff = Math.max(0.3, Math.min(6, this.config.smoothingAlpha));
+    // Speed-adaptive precision boost: 0..1 where 1 = nearly motionless.
+    // cursorSpeed is in normalized-units/sec — idle ≈ 0.005, sweep ≈ 1+.
+    const stillness = Math.max(0, Math.min(1, 1 - this.cursorSpeed * 6));
+    // When still, drop cutoff toward 0.25 Hz (heavy lock-in). When moving,
+    // sit at baseCutoff so motion is followed faithfully.
+    const minCutoff = baseCutoff * (1 - 0.7 * stillness) + 0.25 * stillness;
     // beta scales gently with cutoff so fast motion is always followed.
-    const beta = 0.01 + minCutoff * 0.01;
+    const beta = 0.012 + baseCutoff * 0.012;
     this.fThumb.setParams(minCutoff, beta);
-    this.fThumbZ.setParams(minCutoff, beta);
     this.fIndex.setParams(minCutoff, beta);
-    this.fIndexZ.setParams(minCutoff, beta);
+    this.fIndexMcp.setParams(minCutoff * 0.9, beta);
+    this.fWrist.setParams(minCutoff * 0.9, beta);
+    this.fMiddleTip.setParams(minCutoff, beta);
     // Cursor filter is always slightly snappier than landmarks.
     this.fCursor.setParams(Math.min(6, minCutoff + 0.8), beta + 0.015);
+    TelemetryStore.set({ precisionMode: stillness > 0.6 });
   }
 
   async init(onProgress?: (msg: string) => void) {
