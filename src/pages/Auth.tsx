@@ -22,6 +22,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
   const cloudDisabled = offline || !isSupabaseConfigured;
 
   useEffect(() => {
@@ -82,6 +83,31 @@ const Auth = () => {
       const msg = err instanceof Error ? err.message : "Google sign-in failed";
       toast({ title: "Sign-in error", description: msg, variant: "destructive" });
       setBusy(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (forgotBusy) return;
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      toast({
+        title: "Enter your email first",
+        description: "Type the email above, then tap 'Forgot password' again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setForgotBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotBusy(false);
+    if (error) {
+      toast({ title: "Couldn't send reset email", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: "Check your inbox",
+        description: `We sent a password-reset link to ${email}.`,
+      });
     }
   };
 
