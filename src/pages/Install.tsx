@@ -16,7 +16,7 @@ const Install = () => {
   const [platform, setPlatform] = useState<"ios" | "android" | "desktop">("desktop");
 
   useEffect(() => {
-    document.title = "Install — OmniPoint";
+    document.title = "Install — BreezeControl";
     const ua = navigator.userAgent;
     if (/iPhone|iPad|iPod/.test(ua)) setPlatform("ios");
     else if (/Android/.test(ua)) setPlatform("android");
@@ -67,7 +67,7 @@ const Install = () => {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-              Install OmniPoint
+              Install BreezeControl
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               Add it to your home screen and launch it like a native app.
@@ -102,7 +102,7 @@ const Install = () => {
             steps={[
               "Tap the ⋮ menu in the top-right corner.",
               'Choose "Install app" or "Add to Home screen".',
-              "Confirm. The OmniPoint icon appears on your home screen.",
+              "Confirm. The BreezeControl icon appears on your home screen.",
             ]}
           />
           <PlatformCard
@@ -125,7 +125,7 @@ const Install = () => {
             title="Desktop (Chrome / Edge)"
             steps={[
               "Look for the ⊕ install icon at the right edge of the address bar.",
-              'Or open the ⋮ menu → "Install OmniPoint".',
+              'Or open the ⋮ menu → "Install BreezeControl".',
               "Launch from your dock, taskbar, or start menu.",
             ]}
           />

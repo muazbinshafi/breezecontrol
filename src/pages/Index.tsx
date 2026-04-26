@@ -9,7 +9,7 @@ import { ThemeSettings, ThemeToggleQuick } from "@/components/ThemeSettings";
 
 const Index = () => {
   useEffect(() => {
-    document.title = "OmniPoint HCI — Touchless Gesture Control for Web, Desktop & Mobile";
+    document.title = "BreezeControl — Touchless Gesture Control for Web, Desktop & Mobile";
     const setMeta = (name: string, content: string, attr: "name" | "property" = "name") => {
       let tag = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
       if (!tag) {
@@ -23,7 +23,7 @@ const Index = () => {
       "description",
       "Control your computer or phone with hand gestures. 60 FPS MediaPipe vision, customizable bindings, paint mode, cross-platform OS bridge, PWA installable. Open source.",
     );
-    setMeta("og:title", "OmniPoint HCI — Touchless Gesture Control", "property");
+    setMeta("og:title", "BreezeControl — Touchless Gesture Control", "property");
     setMeta(
       "og:description",
       "Hand gestures → real cursor. MediaPipe vision · customizable profiles · paint toolbox · cross-platform bridge · installable on phone.",
@@ -60,7 +60,7 @@ function Header() {
             <span className="absolute -inset-0.5 rounded-lg bg-gradient-primary opacity-40 blur-md -z-10" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="font-display text-[15px] text-foreground">OmniPoint</span>
+            <span className="font-display text-[15px] text-foreground">BreezeControl</span>
             <span className="font-mono text-[9px] tracking-[0.25em] text-muted-foreground -mt-0.5">HCI · v2.0</span>
           </div>
         </Link>
@@ -116,7 +116,7 @@ function Hero() {
               the new <span className="text-gradient">mouse</span>.
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed">
-              OmniPoint turns any webcam into a precision input device. Move, click, draw and
+              BreezeControl turns any webcam into a precision input device. Move, click, draw and
               scroll across your desktop or phone — without touching a thing. Customizable
               gestures, named profiles, paint toolbox, sub-frame latency.
             </p>
@@ -305,7 +305,7 @@ function WhatsNew() {
       <SectionHead
         eyebrow="What's new"
         title="Built up since v1."
-        subtitle="The latest pass focused on customization, paint, and getting OmniPoint running everywhere."
+        subtitle="The latest pass focused on customization, paint, and getting BreezeControl running everywhere."
       />
       <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {updates.map((u) => (
@@ -340,7 +340,7 @@ function Features() {
   return (
     <section id="features" className="mx-auto max-w-7xl px-6 py-24 lg:py-32">
       <SectionHead
-        eyebrow="Why OmniPoint"
+        eyebrow="Why BreezeControl"
         title="Built for precision, designed for everyone."
         subtitle="A complete vision-to-HID pipeline you can actually use — not a research demo."
       />
@@ -838,7 +838,7 @@ function Footer() {
           <div className="w-7 h-7 rounded-md bg-gradient-primary flex items-center justify-center">
             <Hand className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-display text-sm">OmniPoint HCI</span>
+          <span className="font-display text-sm">BreezeControl</span>
           <span className="text-xs text-muted-foreground">· Open source · MIT</span>
         </div>
         <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">

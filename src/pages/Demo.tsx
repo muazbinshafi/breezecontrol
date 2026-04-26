@@ -46,7 +46,7 @@ const Demo = () => {
   const browserCursor = useBrowserCursor(initialized && controlMode === "browser", "pointer");
 
   useEffect(() => {
-    document.title = "Live Sensor — OmniPoint HCI";
+    document.title = "Live Sensor — BreezeControl";
   }, []);
 
   // When a profile carrying an engineConfig is activated (e.g. after cloud
@@ -254,7 +254,7 @@ const Demo = () => {
 
   return (
       <main className="h-[100dvh] w-screen flex flex-col bg-background text-foreground overflow-hidden">
-        <h1 className="sr-only">OmniPoint HCI — Live Sensor</h1>
+        <h1 className="sr-only">BreezeControl — Live Sensor</h1>
         {!showInit && <StatusBar onEmergencyToggle={handleEmergencyToggle} />}
         {!showInit && (
           <ControlModeBar

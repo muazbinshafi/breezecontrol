@@ -25,7 +25,7 @@ const Auth = () => {
   const cloudDisabled = offline || !isSupabaseConfigured;
 
   useEffect(() => {
-    document.title = mode === "signin" ? "Sign in — OmniPoint" : "Create account — OmniPoint";
+    document.title = mode === "signin" ? "Sign in — BreezeControl" : "Create account — BreezeControl";
   }, [mode]);
 
   // Already signed in? Send to demo.
@@ -104,7 +104,7 @@ const Auth = () => {
           <div className="w-10 h-10 rounded-lg bg-gradient-primary grid place-items-center shadow-md">
             <Hand className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-display text-xl">OmniPoint</span>
+          <span className="font-display text-xl">BreezeControl</span>
         </div>
 
         <div className="border border-border bg-card shadow-2xl p-6 sm:p-8">

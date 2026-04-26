@@ -19,7 +19,7 @@ const Account = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    document.title = "Account — OmniPoint";
+    document.title = "Account — BreezeControl";
   }, []);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ const Account = () => {
           <div className="w-7 h-7 rounded-md bg-gradient-primary grid place-items-center">
             <Hand className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-display text-sm">OmniPoint</span>
+          <span className="font-display text-sm">BreezeControl</span>
         </Link>
         <span className="font-mono text-[10px] tracking-[0.3em] text-emerald-glow">ACCOUNT</span>
       </header>
