@@ -74,7 +74,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <a
-            href="https://github.com/muazbinshafi/airtouch-v3"
+            href="https://github.com/muazbinshafi/airtouch-v8"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
@@ -112,13 +112,13 @@ function Hero() {
               v2 · Customizable gestures · Paint mode · Mobile-ready
             </div>
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl leading-[1.02] text-foreground">
-              Your hands are<br />
-              the new <span className="text-gradient">mouse</span>.
+              Wave hello to your<br />
+              new <span className="text-gradient">cursor</span>.
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed">
-              BreezeControl turns any webcam into a precision input device. Move, click, draw and
-              scroll across your desktop or phone — without touching a thing. Customizable
-              gestures, named profiles, paint toolbox, sub-frame latency.
+              BreezeControl turns any webcam into a friendly, touch-free input device.
+              Pinch to click, point to move, draw in the air — on your laptop or your
+              phone. Soft on the eyes, sharp on the cursor.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link to="/demo" className="btn-primary h-12 px-6 text-sm">
@@ -579,10 +579,10 @@ function Architecture() {
   );
 }
 
-const REPO_BRIDGE = "https://github.com/muazbinshafi/airtouch-v3/tree/main/bridge";
-const REPO_BRIDGE_PY = "https://github.com/muazbinshafi/airtouch-v3/blob/main/bridge/omnipoint_bridge.py";
-const REPO_BRIDGE_REQ = "https://github.com/muazbinshafi/airtouch-v3/blob/main/bridge/requirements.txt";
-const REPO_BRIDGE_README = "https://github.com/muazbinshafi/airtouch-v3/blob/main/bridge/README.md";
+const REPO_BRIDGE = "https://github.com/muazbinshafi/airtouch-v8/tree/main/bridge";
+const REPO_BRIDGE_PY = "https://github.com/muazbinshafi/airtouch-v8/blob/main/bridge/omnipoint_bridge.py";
+const REPO_BRIDGE_REQ = "https://github.com/muazbinshafi/airtouch-v8/blob/main/bridge/requirements.txt";
+const REPO_BRIDGE_README = "https://github.com/muazbinshafi/airtouch-v8/blob/main/bridge/README.md";
 
 function BridgeSection() {
   const platforms = [
@@ -795,10 +795,10 @@ function CTA() {
             Ready when you are
           </div>
           <h2 className="font-display text-3xl sm:text-5xl leading-tight">
-            Stop touching your <span className="text-gradient">mouse</span>.
+            Give your mouse a <span className="text-gradient">break</span>.
           </h2>
           <p className="mt-4 text-muted-foreground text-lg max-w-lg">
-            Try the browser demo in under a minute — no install required.
+            Try the browser demo in under a minute — no install, no signup required.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/demo" className="btn-primary h-12 px-6 text-sm">
@@ -846,7 +846,7 @@ function Footer() {
           <Link to="/guide" className="hover:text-foreground transition-colors">Guide</Link>
           <Link to="/install" className="hover:text-foreground transition-colors">Install</Link>
           <a href="#quickstart" className="hover:text-foreground transition-colors">Docs</a>
-          <a href="https://github.com/muazbinshafi/airtouch-v3" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+          <a href="https://github.com/muazbinshafi/airtouch-v8" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1.5">
             <Github className="w-4 h-4" /> GitHub
           </a>
         </div>
