@@ -84,6 +84,7 @@ const initial: TelemetrySnapshot = {
   fingerCount: 0,
   pinchDistance: 0,
   landmarks: [],
+  precisionMode: false,
 };
 
 let snapshot: TelemetrySnapshot = { ...initial };
