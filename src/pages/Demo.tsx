@@ -108,18 +108,27 @@ const Demo = () => {
           "Camera API unavailable. Use a Chromium-based browser (Chrome/Edge/Brave) on the latest version.",
         );
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          // Request the highest practical resolution + frame rate the camera
-          // can deliver. More pixels = more sub-mm landmark precision; more
-          // FPS = lower One-Euro lag and tighter pinch-velocity estimates.
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          frameRate: { ideal: 60, min: 30 },
-          facingMode: "user",
-        },
-        audio: false,
-      });
+      // Try the highest-quality stream first, but fall back gracefully if the
+      // webcam can't satisfy the constraints. Hard `min` values cause an
+      // OverconstrainedError on many built-in laptop cameras → no detection.
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60 },
+            facingMode: "user",
+          },
+          audio: false,
+        });
+      } catch (hiErr) {
+        console.warn("[BreezeControl] HD camera request failed, falling back to 720p:", hiErr);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+          audio: false,
+        });
+      }
       streamRef.current = stream;
       setProgress(25);
 

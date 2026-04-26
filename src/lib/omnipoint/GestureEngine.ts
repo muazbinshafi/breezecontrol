@@ -133,13 +133,19 @@ export class GestureEngine {
   private applySmoothingParams() {
     const baseCutoff = Math.max(0.3, Math.min(6, this.config.smoothingAlpha));
     // Speed-adaptive precision boost: 0..1 where 1 = nearly motionless.
-    // cursorSpeed is in normalized-units/sec — idle ≈ 0.005, sweep ≈ 1+.
-    const stillness = Math.max(0, Math.min(1, 1 - this.cursorSpeed * 6));
-    // When still, drop cutoff toward 0.25 Hz (heavy lock-in). When moving,
-    // sit at baseCutoff so motion is followed faithfully.
-    const minCutoff = baseCutoff * (1 - 0.7 * stillness) + 0.25 * stillness;
+    // cursorSpeed is in normalized-units/sec — idle ≈ 0.01, sweep ≈ 1+.
+    // We require the hand to actually be PRESENT before applying any boost,
+    // otherwise the very first frames (when cursorSpeed is still 0 from init)
+    // would lock the filter wide-shut and detection would feel "frozen".
+    const handPresent = TelemetryStore.get().handPresent;
+    const stillness = handPresent
+      ? Math.max(0, Math.min(1, 1 - this.cursorSpeed * 8))
+      : 0;
+    // When still, blend cutoff toward 0.6 Hz (firm lock-in but not paralyzed).
+    // When moving, sit at baseCutoff so motion is followed faithfully.
+    const minCutoff = baseCutoff * (1 - 0.55 * stillness) + 0.6 * stillness;
     // beta scales gently with cutoff so fast motion is always followed.
-    const beta = 0.012 + baseCutoff * 0.012;
+    const beta = 0.015 + baseCutoff * 0.012;
     this.fThumb.setParams(minCutoff, beta);
     this.fIndex.setParams(minCutoff, beta);
     this.fIndexMcp.setParams(minCutoff * 0.9, beta);
@@ -160,9 +166,9 @@ export class GestureEngine {
       numHands: 1,
       runningMode: "VIDEO" as const,
       // Higher thresholds reject low-confidence frames → fewer phantom poses.
-      minHandDetectionConfidence: 0.7,
-      minHandPresenceConfidence: 0.7,
-      minTrackingConfidence: 0.65,
+      minHandDetectionConfidence: 0.5,
+      minHandPresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
     };
     const modelAssetPath =
       "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
