@@ -308,7 +308,7 @@ function Field({
   autoComplete?: string;
 }) {
   return (
-    <label className="flex items-center gap-2 border border-border bg-background h-11 px-3 focus-within:border-primary transition-colors">
+    <label className="flex items-center gap-2 border border-border bg-background h-11 px-3 rounded-xl focus-within:border-primary transition-colors">
       <span className="text-muted-foreground">{icon}</span>
       <input
         type={type}
