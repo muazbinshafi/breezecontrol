@@ -57,6 +57,8 @@ export interface TelemetrySnapshot {
   pinchDistance: number;
   /** Mirrored, normalized 21-point hand skeleton for live overlay rendering. */
   landmarks: HandLandmarks;
+  /** True when the engine has dropped into adaptive precision-mode (hand near-still). */
+  precisionMode: boolean;
 }
 
 const initial: TelemetrySnapshot = {
