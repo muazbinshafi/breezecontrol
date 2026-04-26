@@ -424,9 +424,9 @@ export class GestureEngine {
 
     // Three-finger pinch (thumb + index + middle close together) → right click
     const tmPinchRaw = Math.hypot(
-      thumbTip.x - middleTip.x,
-      thumbTip.y - middleTip.y,
-      thumbTip.z - middleTip.z,
+      tx - mx,
+      ty - my,
+      tz - mz,
     );
     const tmPinch = tmPinchRaw / handScale;
 
