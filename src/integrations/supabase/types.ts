@@ -26,10 +26,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          id?: string
+          id: string
           is_active?: boolean
           name: string
-          settings: Json
+          settings?: Json
           updated_at?: string
           user_id: string
         }
