@@ -78,3 +78,32 @@ export class OneEuroFilter2D {
     return [this.fx.filter(x, tNowMs), this.fy.filter(y, tNowMs)];
   }
 }
+
+/** 3D wrapper — independent per-axis filters with shared params. */
+export class OneEuroFilter3D {
+  private fx: OneEuroFilter;
+  private fy: OneEuroFilter;
+  private fz: OneEuroFilter;
+  constructor(minCutoff = 1.0, beta = 0.01) {
+    this.fx = new OneEuroFilter(minCutoff, beta);
+    this.fy = new OneEuroFilter(minCutoff, beta);
+    this.fz = new OneEuroFilter(minCutoff, beta);
+  }
+  setParams(minCutoff: number, beta: number) {
+    this.fx.setParams(minCutoff, beta);
+    this.fy.setParams(minCutoff, beta);
+    this.fz.setParams(minCutoff, beta);
+  }
+  reset() {
+    this.fx.reset();
+    this.fy.reset();
+    this.fz.reset();
+  }
+  filter(x: number, y: number, z: number, tNowMs: number): [number, number, number] {
+    return [
+      this.fx.filter(x, tNowMs),
+      this.fy.filter(y, tNowMs),
+      this.fz.filter(z, tNowMs),
+    ];
+  }
+}
