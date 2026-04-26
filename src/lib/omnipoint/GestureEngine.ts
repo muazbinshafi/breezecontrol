@@ -239,8 +239,11 @@ export class GestureEngine {
       confidence = 0;
       this.smoothedIndex = null;
       this.smoothedThumb = null;
-      this.fThumb.reset(); this.fThumbZ.reset();
-      this.fIndex.reset(); this.fIndexZ.reset();
+      this.fThumb.reset();
+      this.fIndex.reset();
+      this.fIndexMcp.reset();
+      this.fWrist.reset();
+      this.fMiddleTip.reset();
       this.fCursor.reset();
       this.gestureCandidate = "none";
       this.gestureCandidateCount = 0;
