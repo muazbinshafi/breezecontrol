@@ -62,10 +62,12 @@ export class GestureEngine {
   // One-Euro filters for jitter-free thumb / index landmarks (3D each).
   // Lower minCutoff + higher beta = preserves micro-motion of fingertips
   // (critical for sub-cm pinch precision) while still killing static jitter.
-  private fThumb = new OneEuroFilter2D(1.6, 0.04);
-  private fThumbZ = new OneEuroFilter2D(1.6, 0.04);
-  private fIndex = new OneEuroFilter2D(1.6, 0.04);
-  private fIndexZ = new OneEuroFilter2D(1.6, 0.04);
+  private fThumb = new OneEuroFilter3D(1.4, 0.05);
+  private fIndex = new OneEuroFilter3D(1.4, 0.05);
+  // Extra landmarks we filter so the on-screen skeleton is rock-steady too.
+  private fIndexMcp = new OneEuroFilter3D(1.2, 0.04);
+  private fWrist = new OneEuroFilter3D(1.2, 0.04);
+  private fMiddleTip = new OneEuroFilter3D(1.4, 0.05);
   private smoothedThumb: [number, number, number] | null = null;
   private smoothedIndex: [number, number, number] | null = null;
   // Final cursor low-pass (after acceleration). Slightly snappier than landmarks.
@@ -74,6 +76,8 @@ export class GestureEngine {
   private prevPinch: number | null = null;
   private prevPinchT = 0;
   private pinchVelocity = 0;
+  // Cursor speed (in normalized units / sec) — drives precision-mode boost.
+  private cursorSpeed = 0;
 
   // Cursor state (smoothed, post-acceleration), normalized to active zone 0..1
   private cursor = { x: 0.5, y: 0.5 };
