@@ -10,7 +10,7 @@ import {
 } from "@mediapipe/tasks-vision";
 import { TelemetryStore, type GestureKind } from "./TelemetryStore";
 import type { HIDBridge } from "./HIDBridge";
-import { OneEuroFilter2D } from "./OneEuroFilter";
+import { OneEuroFilter2D, OneEuroFilter3D } from "./OneEuroFilter";
 
 export interface EngineConfig {
   sensitivity: number;       // multiplier for velocity curve (1..5)
@@ -24,7 +24,10 @@ export interface EngineConfig {
 
 export const defaultConfig: EngineConfig = {
   sensitivity: 1.4,
-  smoothingAlpha: 1.2,        // One-Euro minCutoff. ~1.2 = balanced smooth+snappy.
+  // Lower minCutoff → smoother. With our adaptive precision-mode below, the
+  // engine drops cutoff further when the hand is nearly still, so we can keep
+  // the baseline snappy here without sacrificing sub-mm steadiness.
+  smoothingAlpha: 1.0,
   // pinch is now a *ratio* of hand size (pinchDist / index-MCP→wrist).
   // index-MCP→wrist is ~70% of middle-MCP→wrist, so the same physical gap
   // yields a *larger* ratio — making sub-cm pinches far easier to trigger.
@@ -34,7 +37,7 @@ export const defaultConfig: EngineConfig = {
   releaseThreshold: 0.78,
   scrollSensitivity: 14,
   aspectRatio: 16 / 9,
-  deadZone: 0.0006,
+  deadZone: 0.0004,
 };
 
 const HAND_CONNECTIONS: [number, number][] = [
@@ -59,10 +62,12 @@ export class GestureEngine {
   // One-Euro filters for jitter-free thumb / index landmarks (3D each).
   // Lower minCutoff + higher beta = preserves micro-motion of fingertips
   // (critical for sub-cm pinch precision) while still killing static jitter.
-  private fThumb = new OneEuroFilter2D(1.6, 0.04);
-  private fThumbZ = new OneEuroFilter2D(1.6, 0.04);
-  private fIndex = new OneEuroFilter2D(1.6, 0.04);
-  private fIndexZ = new OneEuroFilter2D(1.6, 0.04);
+  private fThumb = new OneEuroFilter3D(1.4, 0.05);
+  private fIndex = new OneEuroFilter3D(1.4, 0.05);
+  // Extra landmarks we filter so the on-screen skeleton is rock-steady too.
+  private fIndexMcp = new OneEuroFilter3D(1.2, 0.04);
+  private fWrist = new OneEuroFilter3D(1.2, 0.04);
+  private fMiddleTip = new OneEuroFilter3D(1.4, 0.05);
   private smoothedThumb: [number, number, number] | null = null;
   private smoothedIndex: [number, number, number] | null = null;
   // Final cursor low-pass (after acceleration). Slightly snappier than landmarks.
@@ -71,6 +76,8 @@ export class GestureEngine {
   private prevPinch: number | null = null;
   private prevPinchT = 0;
   private pinchVelocity = 0;
+  // Cursor speed (in normalized units / sec) — drives precision-mode boost.
+  private cursorSpeed = 0;
 
   // Cursor state (smoothed, post-acceleration), normalized to active zone 0..1
   private cursor = { x: 0.5, y: 0.5 };
@@ -113,17 +120,34 @@ export class GestureEngine {
     this.ctx = ctx;
   }
 
-  /** Map config.smoothingAlpha → One-Euro params for both landmark + cursor. */
+  /**
+   * Map config.smoothingAlpha → One-Euro params for landmarks + cursor.
+   *
+   * Adaptive precision-mode: when the cursor is barely moving (sub-pixel
+   * intent — the user is targeting a small UI element), we crush the cutoff
+   * frequency to lock the cursor in place. As soon as the user moves with
+   * intent, the filter snaps wide-open via beta. This is what gives the
+   * system its "millimeter accuracy" feel — micro-tremor is filtered out
+   * but real micro-motion still passes through.
+   */
   private applySmoothingParams() {
-    const minCutoff = Math.max(0.3, Math.min(6, this.config.smoothingAlpha));
+    const baseCutoff = Math.max(0.3, Math.min(6, this.config.smoothingAlpha));
+    // Speed-adaptive precision boost: 0..1 where 1 = nearly motionless.
+    // cursorSpeed is in normalized-units/sec — idle ≈ 0.005, sweep ≈ 1+.
+    const stillness = Math.max(0, Math.min(1, 1 - this.cursorSpeed * 6));
+    // When still, drop cutoff toward 0.25 Hz (heavy lock-in). When moving,
+    // sit at baseCutoff so motion is followed faithfully.
+    const minCutoff = baseCutoff * (1 - 0.7 * stillness) + 0.25 * stillness;
     // beta scales gently with cutoff so fast motion is always followed.
-    const beta = 0.01 + minCutoff * 0.01;
+    const beta = 0.012 + baseCutoff * 0.012;
     this.fThumb.setParams(minCutoff, beta);
-    this.fThumbZ.setParams(minCutoff, beta);
     this.fIndex.setParams(minCutoff, beta);
-    this.fIndexZ.setParams(minCutoff, beta);
+    this.fIndexMcp.setParams(minCutoff * 0.9, beta);
+    this.fWrist.setParams(minCutoff * 0.9, beta);
+    this.fMiddleTip.setParams(minCutoff, beta);
     // Cursor filter is always slightly snappier than landmarks.
     this.fCursor.setParams(Math.min(6, minCutoff + 0.8), beta + 0.015);
+    TelemetryStore.set({ precisionMode: stillness > 0.6 });
   }
 
   async init(onProgress?: (msg: string) => void) {
@@ -215,8 +239,11 @@ export class GestureEngine {
       confidence = 0;
       this.smoothedIndex = null;
       this.smoothedThumb = null;
-      this.fThumb.reset(); this.fThumbZ.reset();
-      this.fIndex.reset(); this.fIndexZ.reset();
+      this.fThumb.reset();
+      this.fIndex.reset();
+      this.fIndexMcp.reset();
+      this.fWrist.reset();
+      this.fMiddleTip.reset();
       this.fCursor.reset();
       this.gestureCandidate = "none";
       this.gestureCandidateCount = 0;
@@ -262,14 +289,17 @@ export class GestureEngine {
     const pinkyPip = lm[18];
     const wrist = lm[0];
 
-    // Apply One-Euro filter independently per axis on landmarks 4 (thumb) and
-    // 8 (index). The filter adapts cutoff to motion speed → still hand = no
-    // jitter, fast hand = no lag.
+    // Apply 3D One-Euro filter to the critical landmarks. Each axis adapts its
+    // cutoff to the motion speed of THAT axis, so micro-tremor (sub-mm) is
+    // killed while real motion passes through with no perceptible lag.
     this.applySmoothingParams();
-    const [tx, ty] = this.fThumb.filter(thumbTip.x, thumbTip.y, tNow);
-    const [, tz] = this.fThumbZ.filter(thumbTip.z, 0, tNow);
-    const [ixs, iys] = this.fIndex.filter(indexTip.x, indexTip.y, tNow);
-    const [, izs] = this.fIndexZ.filter(indexTip.z, 0, tNow);
+    const [tx, ty, tz] = this.fThumb.filter(thumbTip.x, thumbTip.y, thumbTip.z, tNow);
+    const [ixs, iys, izs] = this.fIndex.filter(indexTip.x, indexTip.y, indexTip.z, tNow);
+    // Smooth the reference landmarks too — they feed the hand-scale denominator
+    // for pinch-ratio. Noisy reference = noisy ratio = false-positive clicks.
+    const [imx, imy, imz] = this.fIndexMcp.filter(lm[5].x, lm[5].y, lm[5].z, tNow);
+    const [wx, wy, wz] = this.fWrist.filter(wrist.x, wrist.y, wrist.z, tNow);
+    const [mx, my, mz] = this.fMiddleTip.filter(middleTip.x, middleTip.y, middleTip.z, tNow);
     this.smoothedThumb = [tx, ty, tz];
     this.smoothedIndex = [ixs, iys, izs];
 
@@ -328,6 +358,13 @@ export class GestureEngine {
     const rawCx = Math.min(1, Math.max(0, cx2));
     const rawCy = Math.min(1, Math.max(0, cy2));
     const [smCx, smCy] = this.fCursor.filter(rawCx, rawCy, tNow);
+    // Track cursor speed for the adaptive precision-mode in applySmoothingParams.
+    if (this.prevIndex) {
+      const dtc = Math.max(0.001, (tNow - this.prevIndex.t) / 1000);
+      const instSpeed = Math.hypot(smCx - this.cursor.x, smCy - this.cursor.y) / dtc;
+      // EMA so the speed estimate doesn't flicker frame-to-frame.
+      this.cursorSpeed = this.cursorSpeed * 0.7 + instSpeed * 0.3;
+    }
     this.cursor.x = smCx;
     this.cursor.y = smCy;
     this.prevIndex = { x: inZoneX, y: inZoneY, t: tNow };
@@ -337,14 +374,12 @@ export class GestureEngine {
     const dyp = this.smoothedThumb[1] - this.smoothedIndex[1];
     const dzp = this.smoothedThumb[2] - this.smoothedIndex[2];
     const pinchRaw = Math.hypot(dxp, dyp, dzp);
-    // Hand scale = wrist → INDEX MCP (landmark 5). This is shorter than
-    // wrist→middleMCP, which makes the resulting pinch ratio LARGER for the
-    // same physical gap — boosting effective resolution near zero. The result
-    // is mm-level discrimination of small thumb-index distances.
-    const indexMcp = lm[5];
+    // Hand scale = SMOOTHED wrist → INDEX MCP. Filtering the reference points
+    // before dividing eliminates noise amplification near the threshold —
+    // this is what unlocks mm-level discrimination of small thumb-index gaps.
     const handScale = Math.max(
       0.05,
-      Math.hypot(indexMcp.x - wrist.x, indexMcp.y - wrist.y, indexMcp.z - wrist.z),
+      Math.hypot(imx - wx, imy - wy, imz - wz),
     );
     // pinch is now expressed as a ratio of hand size — robust at any distance.
     const pinch = pinchRaw / handScale;
@@ -389,9 +424,9 @@ export class GestureEngine {
 
     // Three-finger pinch (thumb + index + middle close together) → right click
     const tmPinchRaw = Math.hypot(
-      thumbTip.x - middleTip.x,
-      thumbTip.y - middleTip.y,
-      thumbTip.z - middleTip.z,
+      tx - mx,
+      ty - my,
+      tz - mz,
     );
     const tmPinch = tmPinchRaw / handScale;
 

@@ -3,7 +3,7 @@
 // instantly see if their setup is healthy.
 
 import { useTelemetry } from "@/hooks/useTelemetry";
-import { Activity, Wifi, WifiOff } from "lucide-react";
+import { Activity, Wifi, WifiOff, Crosshair } from "lucide-react";
 
 export function TelemetryQualityBadge() {
   const t = useTelemetry();
@@ -37,6 +37,15 @@ export function TelemetryQualityBadge() {
       )}
       <span>{tier.label}</span>
       <span className="text-foreground/80">{score}</span>
+      {t.precisionMode && t.handPresent && (
+        <span
+          className="hidden md:inline-flex items-center gap-1 ml-1 pl-2 border-l border-current/30 text-primary"
+          title="Precision mode active — cursor locked for sub-mm targeting"
+        >
+          <Crosshair className="w-3 h-3" />
+          <span className="tracking-[0.3em]">PRECISION</span>
+        </span>
+      )}
       <div className="hidden md:flex items-center gap-1.5 ml-1 pl-2 border-l border-current/30 opacity-80">
         <span>{t.fps}</span>
         <span className="opacity-60">FPS</span>
