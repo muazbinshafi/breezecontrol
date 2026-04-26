@@ -358,6 +358,13 @@ export class GestureEngine {
     const rawCx = Math.min(1, Math.max(0, cx2));
     const rawCy = Math.min(1, Math.max(0, cy2));
     const [smCx, smCy] = this.fCursor.filter(rawCx, rawCy, tNow);
+    // Track cursor speed for the adaptive precision-mode in applySmoothingParams.
+    if (this.prevIndex) {
+      const dtc = Math.max(0.001, (tNow - this.prevIndex.t) / 1000);
+      const instSpeed = Math.hypot(smCx - this.cursor.x, smCy - this.cursor.y) / dtc;
+      // EMA so the speed estimate doesn't flicker frame-to-frame.
+      this.cursorSpeed = this.cursorSpeed * 0.7 + instSpeed * 0.3;
+    }
     this.cursor.x = smCx;
     this.cursor.y = smCy;
     this.prevIndex = { x: inZoneX, y: inZoneY, t: tNow };
@@ -367,14 +374,12 @@ export class GestureEngine {
     const dyp = this.smoothedThumb[1] - this.smoothedIndex[1];
     const dzp = this.smoothedThumb[2] - this.smoothedIndex[2];
     const pinchRaw = Math.hypot(dxp, dyp, dzp);
-    // Hand scale = wrist → INDEX MCP (landmark 5). This is shorter than
-    // wrist→middleMCP, which makes the resulting pinch ratio LARGER for the
-    // same physical gap — boosting effective resolution near zero. The result
-    // is mm-level discrimination of small thumb-index distances.
-    const indexMcp = lm[5];
+    // Hand scale = SMOOTHED wrist → INDEX MCP. Filtering the reference points
+    // before dividing eliminates noise amplification near the threshold —
+    // this is what unlocks mm-level discrimination of small thumb-index gaps.
     const handScale = Math.max(
       0.05,
-      Math.hypot(indexMcp.x - wrist.x, indexMcp.y - wrist.y, indexMcp.z - wrist.z),
+      Math.hypot(imx - wx, imy - wy, imz - wz),
     );
     // pinch is now expressed as a ratio of hand size — robust at any distance.
     const pinch = pinchRaw / handScale;
