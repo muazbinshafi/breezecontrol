@@ -10,7 +10,7 @@ import {
 } from "@mediapipe/tasks-vision";
 import { TelemetryStore, type GestureKind } from "./TelemetryStore";
 import type { HIDBridge } from "./HIDBridge";
-import { OneEuroFilter2D } from "./OneEuroFilter";
+import { OneEuroFilter2D, OneEuroFilter3D } from "./OneEuroFilter";
 
 export interface EngineConfig {
   sensitivity: number;       // multiplier for velocity curve (1..5)
@@ -24,7 +24,10 @@ export interface EngineConfig {
 
 export const defaultConfig: EngineConfig = {
   sensitivity: 1.4,
-  smoothingAlpha: 1.2,        // One-Euro minCutoff. ~1.2 = balanced smooth+snappy.
+  // Lower minCutoff → smoother. With our adaptive precision-mode below, the
+  // engine drops cutoff further when the hand is nearly still, so we can keep
+  // the baseline snappy here without sacrificing sub-mm steadiness.
+  smoothingAlpha: 1.0,
   // pinch is now a *ratio* of hand size (pinchDist / index-MCP→wrist).
   // index-MCP→wrist is ~70% of middle-MCP→wrist, so the same physical gap
   // yields a *larger* ratio — making sub-cm pinches far easier to trigger.
@@ -34,7 +37,7 @@ export const defaultConfig: EngineConfig = {
   releaseThreshold: 0.78,
   scrollSensitivity: 14,
   aspectRatio: 16 / 9,
-  deadZone: 0.0006,
+  deadZone: 0.0004,
 };
 
 const HAND_CONNECTIONS: [number, number][] = [
