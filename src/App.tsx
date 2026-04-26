@@ -12,6 +12,7 @@ import GestureGuide from "./pages/GestureGuide.tsx";
 import Install from "./pages/Install.tsx";
 import BridgeInstall from "./pages/BridgeInstall.tsx";
 import Auth from "./pages/Auth.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import Account from "./pages/Account.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -25,6 +26,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/guide" element={<GestureGuide />} />
       <Route path="/demo" element={<Demo />} />
       <Route path="/install" element={<Install />} />
