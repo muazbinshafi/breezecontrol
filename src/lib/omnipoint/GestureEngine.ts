@@ -156,7 +156,14 @@ export class GestureEngine {
     TelemetryStore.set({ precisionMode: stillness > 0.6 });
   }
 
-  async init(onProgress?: (msg: string) => void) {
+  async init(
+    onProgress?: (msg: string) => void,
+    floors?: {
+      minHandDetectionConfidence?: number;
+      minHandPresenceConfidence?: number;
+      minTrackingConfidence?: number;
+    },
+  ) {
     onProgress?.("Loading vision fileset...");
     const fileset = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm",
@@ -169,10 +176,11 @@ export class GestureEngine {
       runningMode: "VIDEO" as const,
       // Lowered floors: 0.5 was too aggressive — slightly off-axis or
       // dim-lit hands were rejected entirely. 0.3 still cuts background
-      // noise but recovers far more weak/distant detections.
-      minHandDetectionConfidence: 0.3,
-      minHandPresenceConfidence: 0.3,
-      minTrackingConfidence: 0.3,
+      // noise but recovers far more weak/distant detections. The user
+      // can override these from the Live Calibration panel.
+      minHandDetectionConfidence: floors?.minHandDetectionConfidence ?? 0.3,
+      minHandPresenceConfidence: floors?.minHandPresenceConfidence ?? 0.3,
+      minTrackingConfidence: floors?.minTrackingConfidence ?? 0.3,
     };
     const modelAssetPath =
       "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
@@ -181,7 +189,7 @@ export class GestureEngine {
         baseOptions: { modelAssetPath, delegate: "GPU" },
         ...baseOpts,
       });
-      console.info("[OmniPoint] HandLandmarker initialized (GPU delegate)");
+      console.info("[OmniPoint] HandLandmarker initialized (GPU delegate)", baseOpts);
     } catch (gpuErr) {
       console.warn("[OmniPoint] GPU delegate failed, falling back to CPU:", gpuErr);
       onProgress?.("GPU unavailable — falling back to CPU...");
@@ -189,7 +197,7 @@ export class GestureEngine {
         baseOptions: { modelAssetPath, delegate: "CPU" },
         ...baseOpts,
       });
-      console.info("[OmniPoint] HandLandmarker initialized (CPU delegate)");
+      console.info("[OmniPoint] HandLandmarker initialized (CPU delegate)", baseOpts);
     }
     onProgress?.("Sensor ready.");
   }
