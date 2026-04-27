@@ -64,6 +64,8 @@ interface Props {
   // overflow actions
   onOpenTour: () => void;
   onOpenCalibration: () => void;
+  onOpenLivePanel: () => void;
+  livePanelOpen: boolean;
 }
 
 export function DemoTopBar({
@@ -82,6 +84,8 @@ export function DemoTopBar({
   onOpenTroubleshooter,
   onOpenTour,
   onOpenCalibration,
+  onOpenLivePanel,
+  livePanelOpen,
 }: Props) {
   const t = useTelemetry();
 
