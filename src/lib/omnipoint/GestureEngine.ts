@@ -440,9 +440,8 @@ export class GestureEngine {
     const fingersExtended: [boolean, boolean, boolean, boolean, boolean] =
       [thumbExt, indexExt, middleExt, ringExt, pinkyExt];
     const fingerCount = fingersExtended.filter(Boolean).length;
-    const rawHandLabel = result.handedness?.[0]?.[0]?.categoryName ?? "";
     // MediaPipe returns mirrored handedness for selfie cam — flip it.
-    const handedness = rawHandLabel === "Left" ? "Right" : rawHandLabel === "Right" ? "Left" : "none";
+    const handedness = handednessSrc === "Left" ? "Right" : handednessSrc === "Right" ? "Left" : "none";
 
     // Three-finger pinch (thumb + index + middle close together) → right click
     const tmPinchRaw = Math.hypot(
