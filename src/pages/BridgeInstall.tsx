@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Cpu, Copy, Check, Terminal, Apple, Hand,
+  Cpu, Copy, Check, Terminal, Apple, Hand, ChevronRight,
   ExternalLink, Download, Github, ShieldCheck,
 } from "lucide-react";
 
@@ -63,10 +63,10 @@ const BridgeInstall = () => {
     }
   };
 
-  const tabs: { id: OS; label: string; icon: typeof Cpu }[] = [
-    { id: "windows", label: "Windows", icon: Terminal },
-    { id: "macos",   label: "macOS",   icon: Apple },
-    { id: "linux",   label: "Linux",   icon: Cpu },
+  const tiles: { id: OS; label: string; icon: typeof Cpu; tagline: string }[] = [
+    { id: "windows", label: "Windows",  icon: Terminal, tagline: "Windows 10 / 11 · PowerShell" },
+    { id: "macos",   label: "macOS",    icon: Apple,    tagline: "macOS 12+ · Intel & Apple Silicon" },
+    { id: "linux",   label: "Linux",    icon: Cpu,      tagline: "X11 / Wayland · uinput" },
   ];
 
   return (
@@ -83,7 +83,7 @@ const BridgeInstall = () => {
 
       <section className="max-w-3xl mx-auto px-4 py-8 sm:py-14">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 grid place-items-center border border-primary/40 bg-primary/10">
+          <div className="w-12 h-12 grid place-items-center border border-primary/40 bg-primary/10 rounded-xl">
             <Cpu className="w-6 h-6 text-primary" />
           </div>
           <div>
@@ -91,40 +91,62 @@ const BridgeInstall = () => {
               Install the OS bridge
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Run gestures as real mouse + keyboard events on your computer.
+              Pick your operating system for a complete step-by-step guide.
             </p>
           </div>
         </div>
 
-        <div className="border border-warning/40 bg-warning/5 p-4 mb-6 flex items-start gap-3">
+        <div className="border border-warning/40 bg-warning/5 p-4 mb-6 rounded-xl flex items-start gap-3">
           <ShieldCheck className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           <div className="text-sm text-foreground/90 leading-relaxed">
             <strong>Why a local installation?</strong> The bridge has to control
             <em> your </em> mouse, so it must run on your own computer — there's
             no way for a hosted server to do this for security reasons. Setup
-            takes about a minute.
+            takes about 5 minutes per platform.
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-1 mb-6 border hairline">
-          {tabs.map((t) => {
-            const active = t.id === os;
+        {/* Big OS tiles → per-OS guides */}
+        <div className="grid sm:grid-cols-3 gap-3 mb-10">
+          {tiles.map((t) => {
             const Icon = t.icon;
+            const active = t.id === os;
             return (
-              <button
+              <Link
                 key={t.id}
-                onClick={() => setOs(t.id)}
-                className={`h-10 inline-flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.25em] transition-colors ${
-                  active
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                to={`/bridge/${t.id}`}
+                onMouseEnter={() => setOs(t.id)}
+                className={`group relative border rounded-2xl p-5 transition-all hover:border-primary/60 hover:bg-primary/5 hover:-translate-y-0.5 ${
+                  active ? "border-primary/50 bg-primary/5" : "hairline bg-card/40"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {t.label.toUpperCase()}
-              </button>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 grid place-items-center rounded-xl border border-primary/30 bg-primary/10">
+                    <Icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div className="font-display text-lg leading-tight">{t.label}</div>
+                <div className="text-xs text-muted-foreground mt-1">{t.tagline}</div>
+                <div className="mt-4 font-mono text-[10px] tracking-[0.25em] text-primary/80">
+                  OPEN GUIDE →
+                </div>
+              </Link>
             );
           })}
+        </div>
+
+        {/* Inline quickstart for the previewed OS */}
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-mono text-[11px] tracking-[0.3em] text-muted-foreground">
+            ▸ QUICK COMMANDS · {os.toUpperCase()}
+          </h2>
+          <Link
+            to={`/bridge/${os}`}
+            className="font-mono text-[10px] tracking-[0.25em] text-primary hover:underline"
+          >
+            FULL GUIDE →
+          </Link>
         </div>
 
         <ol className="space-y-2 mb-6">
