@@ -214,27 +214,34 @@ export function DemoTopBar({
             🖥 BRIDGE
           </Pill>
 
-          {controlMode === "browser" && (
-            <>
-              <Divider />
-              <Pill active={cursorMode === "pointer"} onClick={() => onCursorModeChange("pointer")}>
-                POINTER
-              </Pill>
-              <Pill active={cursorMode === "draw"} onClick={() => onCursorModeChange("draw")}>
-                DRAW
-              </Pill>
-              <Pill active={cursorMode === "off"} onClick={() => onCursorModeChange("off")}>
-                OFF
-              </Pill>
-              {cursorMode === "draw" && (
-                <button
-                  onClick={onClearDrawing}
-                  className="font-mono text-[10px] tracking-[0.2em] px-2.5 h-7 border hairline text-muted-foreground hover:text-foreground rounded-md"
-                >
-                  ✕ CLEAR
-                </button>
-              )}
-            </>
+          {/* Cursor mode pills are available in BOTH control modes:
+              - browser: drives the in-page virtual cursor
+              - bridge:  optional in-page draw overlay on top of OS control */}
+          <Divider />
+          <Pill active={cursorMode === "pointer"} onClick={() => onCursorModeChange("pointer")}>
+            POINTER
+          </Pill>
+          <Pill
+            active={cursorMode === "draw"}
+            onClick={() => onCursorModeChange("draw")}
+            title={
+              controlMode === "bridge"
+                ? "Draw an overlay on this page (bridge still controls the OS cursor)"
+                : "Draw on this page using your hand"
+            }
+          >
+            DRAW
+          </Pill>
+          <Pill active={cursorMode === "off"} onClick={() => onCursorModeChange("off")}>
+            OFF
+          </Pill>
+          {cursorMode === "draw" && (
+            <button
+              onClick={onClearDrawing}
+              className="font-mono text-[10px] tracking-[0.2em] px-2.5 h-7 border hairline text-muted-foreground hover:text-foreground rounded-md"
+            >
+              ✕ CLEAR
+            </button>
           )}
 
           <Divider />
