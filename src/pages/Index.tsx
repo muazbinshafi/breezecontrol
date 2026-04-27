@@ -658,22 +658,31 @@ function BridgeSection() {
           {platforms.map((p) => {
             const Icon = p.icon;
             return (
-              <div key={p.id} className="panel-elevated p-6 flex flex-col">
+              <Link
+                key={p.id}
+                to={`/bridge/${p.id}`}
+                aria-label={`Open the full ${p.name} install guide`}
+                className="panel-elevated p-6 flex flex-col text-left transition-all hover:border-primary/50 hover:-translate-y-0.5 hover:shadow-lg group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shadow-md">
                     <Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-display text-base text-foreground">{p.name}</h3>
                     <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase">{p.tag}</p>
                   </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <pre className="flex-1 p-3 font-mono text-[11.5px] text-foreground/90 bg-card border border-border overflow-x-auto leading-relaxed">{p.install}</pre>
+                <pre className="flex-1 p-3 font-mono text-[11.5px] text-foreground/90 bg-card border border-border overflow-x-auto leading-relaxed rounded-md">{p.install}</pre>
                 <p className="mt-3 text-xs text-muted-foreground flex items-start gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
                   {p.note}
                 </p>
-              </div>
+                <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.25em] text-primary group-hover:underline">
+                  OPEN FULL GUIDE <ArrowRight className="w-3 h-3" />
+                </span>
+              </Link>
             );
           })}
         </div>
