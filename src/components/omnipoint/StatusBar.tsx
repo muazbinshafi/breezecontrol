@@ -40,6 +40,27 @@ export function StatusBar({ onEmergencyToggle }: Props) {
         <div className="font-mono text-[11px] text-muted-foreground">
           INF <span className="text-foreground">{t.inferenceMs.toFixed(1)}ms</span>
         </div>
+        {t.daemon && (
+          <div
+            className="hidden md:flex items-center gap-2 font-mono text-[11px] text-muted-foreground"
+            title={
+              `Bridge daemon v${t.daemon.version ?? "?"}` +
+              (t.daemon.os ? ` · ${t.daemon.os}/${t.daemon.sessionType ?? "?"}` : "") +
+              (t.daemon.screen ? ` · screen ${t.daemon.screen.w}×${t.daemon.screen.h}` : "")
+            }
+          >
+            <span className="text-emerald-glow">DMN</span>
+            <span className="text-foreground">v{t.daemon.version ?? "?"}</span>
+            {t.daemon.screen && (
+              <span>
+                {t.daemon.screen.w}×{t.daemon.screen.h}
+              </span>
+            )}
+            {t.daemon.os && (
+              <span className="uppercase tracking-[0.15em]">{t.daemon.os}</span>
+            )}
+          </div>
+        )}
       </div>
       <button
         onClick={onEmergencyToggle}
