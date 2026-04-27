@@ -300,6 +300,7 @@ export class GestureEngine {
   private processLandmarks(result: HandLandmarkerResult, tNow: number, handIdx = 0) {
     const lm = result.landmarks[handIdx];
     const handednessSrc = result.handedness?.[handIdx]?.[0]?.categoryName ?? "";
+    const thumbTip = lm[4];
     const indexTip = lm[8];
     const middleTip = lm[12];
     const ringTip = lm[16];
