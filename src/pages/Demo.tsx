@@ -181,7 +181,7 @@ const Demo = () => {
       await engine.init((m) => {
         setStatus(m);
         setProgress((p) => Math.min(95, p + 12));
-      });
+      }, loadDetectionFloors());
       setProgress(100);
       setStatus("Sensor online.");
       engine.start();
