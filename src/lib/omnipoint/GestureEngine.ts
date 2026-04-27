@@ -242,9 +242,20 @@ export class GestureEngine {
 
     let confidence = 0;
     if (result.landmarks.length > 0) {
-      // handedness score as proxy for confidence
-      confidence = result.handedness?.[0]?.[0]?.score ?? 0.8;
-      this.processLandmarks(result, tNow);
+      // Pick the most-confident hand as the controller (handedness score is
+      // MediaPipe's per-hand confidence). This way the user can use either
+      // hand and the system always tracks the strongest signal.
+      let bestIdx = 0;
+      let bestScore = result.handedness?.[0]?.[0]?.score ?? 0;
+      for (let i = 1; i < result.landmarks.length; i++) {
+        const s = result.handedness?.[i]?.[0]?.score ?? 0;
+        if (s > bestScore) {
+          bestScore = s;
+          bestIdx = i;
+        }
+      }
+      confidence = bestScore || 0.8;
+      this.processLandmarks(result, tNow, bestIdx);
     } else {
       confidence = 0;
       this.smoothedIndex = null;
