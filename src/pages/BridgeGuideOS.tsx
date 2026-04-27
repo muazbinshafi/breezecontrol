@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Apple, Check, Copy, Cpu, ExternalLink, Github,
-  Hand, Terminal, Download, ShieldCheck, Globe, PlayCircle, Package,
+  Hand, Terminal, Download, ShieldCheck, Globe, PlayCircle, Package, Zap,
 } from "lucide-react";
 
 type OS = "windows" | "macos" | "linux";
@@ -38,6 +38,7 @@ interface Step {
   label: string;
   cmd?: string;
   note?: string;
+  multiline?: boolean;
 }
 
 interface Section {
@@ -46,45 +47,113 @@ interface Section {
   icon: typeof Cpu;
   intro?: string;
   steps: Step[];
+  highlight?: boolean;
 }
 
 const REPO_URL = "https://github.com/muazbinshafi/airtouch-v8";
 const REPO_CLONE = "git clone https://github.com/muazbinshafi/airtouch-v8.git";
 
+// One-shot scripts that automate everything: deps check, venv, install, launch.
+const ONE_SHOT: Record<OS, string> = {
+  windows: `# Run in PowerShell from the project root (airtouch-v8).
+# Allow this session to run scripts, then bootstrap + launch everything.
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+if (-not (Get-Command py -ErrorAction SilentlyContinue)) { winget install -e --id Python.Python.3.11 --accept-source-agreements --accept-package-agreements }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install -e --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements }
+Push-Location bridge
+py -m venv .venv
+.\\.venv\\Scripts\\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+Start-Process powershell -ArgumentList '-NoExit','-Command',"cd '$PWD'; .\\.venv\\Scripts\\Activate.ps1; python omnipoint_bridge.py"
+Pop-Location
+npm install
+npm run dev`,
+  macos: `# Run in Terminal from the project root (airtouch-v8).
+# Installs Homebrew (if missing), Python, Node, sets up venv, and launches both.
+if ! command -v brew >/dev/null 2>&1; then /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; fi
+brew list python@3.11 >/dev/null 2>&1 || brew install python@3.11
+brew list node >/dev/null 2>&1 || brew install node
+cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
+osascript -e 'tell application "Terminal" to do script "cd \\"'"$PWD"'\\" && source .venv/bin/activate && python3 omnipoint_bridge.py"'
+cd .. && npm install && npm run dev`,
+  linux: `# Run in your terminal from the project root (airtouch-v8).
+# Debian/Ubuntu/Kali version — installs deps, sets up venv, launches bridge + web app.
+sudo apt update && sudo apt install -y python3 python3-venv python3-pip nodejs npm git
+cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
+(python3 omnipoint_bridge.py &) && echo "bridge started in background (PID $!)"
+cd .. && npm install && npm run dev`,
+};
+
 const buildGuide = (os: OS): Section[] => {
   const isWin = os === "windows";
-  const py = isWin ? "python" : "python3";
-  const activate = isWin ? ".venv\\Scripts\\activate" : "source .venv/bin/activate";
+  const py = isWin ? "py" : "python3";
+  const activate = isWin ? ".\\.venv\\Scripts\\Activate.ps1" : "source .venv/bin/activate";
+
+  // STEP 0 — the magic one-liner.
+  const oneShot: Section = {
+    id: "auto",
+    title: "0. One-shot auto install (recommended)",
+    icon: Zap,
+    highlight: true,
+    intro:
+      os === "windows"
+        ? "Open PowerShell in the project folder and paste the block below. It installs Python + Node (via winget), creates the venv, installs deps, opens the bridge in a second window, and starts the web app. Skip steps 1–4 if this works."
+        : os === "macos"
+          ? "Open Terminal in the project folder and paste the block below. It installs Homebrew/Python/Node if missing, sets up the venv, opens the bridge in a new Terminal tab, and starts the web app."
+          : "Open a terminal in the project folder and paste the block below. It installs all OS deps via apt, sets up the venv, runs the bridge in the background, and starts the web app.",
+    steps: [
+      {
+        label: "Paste this entire block — it does everything end-to-end:",
+        cmd: ONE_SHOT[os],
+        multiline: true,
+        note:
+          os === "windows"
+            ? "If winget is missing, install it from the Microsoft Store (\"App Installer\"), then re-run."
+            : os === "linux"
+              ? "Fedora? Swap apt line for: sudo dnf install -y python3 python3-virtualenv nodejs npm git"
+              : "First-run macOS will prompt for Accessibility + Input Monitoring — approve both.",
+      },
+      {
+        label:
+          "When you see the dev server URL (usually http://localhost:8080), open it in Chrome/Edge → ENTER DEMO → switch Control mode to Bridge.",
+      },
+    ],
+  };
 
   const pythonInstall: Section = {
     id: "python",
-    title: "1. Install Python 3.10+",
+    title: "1. Install Python 3.10+ (manual)",
     icon: Package,
     intro:
       os === "windows"
-        ? 'Download the official installer and — important — tick "Add Python to PATH" on the first screen before clicking Install.'
+        ? 'Skip if the one-shot above worked. Otherwise: download the official installer and — important — tick "Add Python to PATH" on the first screen before clicking Install.'
         : os === "macos"
-          ? "Either use the official installer from python.org or install via Homebrew (recommended)."
-          : "Use your distribution's package manager. The bridge needs Python 3.10 or newer.",
+          ? "Skip if the one-shot above worked. Otherwise install via Homebrew (recommended) or python.org."
+          : "Skip if the one-shot above worked. Otherwise use your distribution's package manager.",
     steps:
       os === "windows"
         ? [
             { label: "Download the Windows installer from python.org.", note: "Pick Python 3.11 or newer." },
             { label: 'Run the installer and tick "Add python.exe to PATH".' },
             { label: 'Click "Install Now" and wait for it to finish.' },
-            { label: "Verify the install in a new PowerShell window:", cmd: "python --version" },
+            { label: "Open a NEW PowerShell window and verify:", cmd: "py --version" },
+            {
+              label: 'If Windows says "Python was not found" and opens the Store, disable the alias:',
+              note: "Settings → Apps → Advanced app settings → App execution aliases → turn OFF both \"python.exe\" and \"python3.exe\" entries.",
+            },
           ]
         : os === "macos"
           ? [
-              { label: "Option A — Homebrew (recommended):", cmd: "brew install python@3.11" },
+              { label: "Option A — Homebrew (recommended):", cmd: "brew install python@3.11 node" },
               { label: "Option B — Download from python.org and run the .pkg installer." },
-              { label: "Verify in Terminal:", cmd: "python3 --version" },
+              { label: "Verify in Terminal:", cmd: "python3 --version && node --version" },
             ]
           : [
-              { label: "Debian / Ubuntu:", cmd: "sudo apt update && sudo apt install -y python3 python3-venv python3-pip git" },
-              { label: "Fedora:", cmd: "sudo dnf install -y python3 python3-virtualenv git" },
-              { label: "Arch:", cmd: "sudo pacman -S python git" },
-              { label: "Verify:", cmd: "python3 --version" },
+              { label: "Debian / Ubuntu / Kali:", cmd: "sudo apt update && sudo apt install -y python3 python3-venv python3-pip nodejs npm git" },
+              { label: "Fedora:", cmd: "sudo dnf install -y python3 python3-virtualenv nodejs npm git" },
+              { label: "Arch:", cmd: "sudo pacman -S python nodejs npm git" },
+              { label: "Verify:", cmd: "python3 --version && node --version" },
             ],
   };
 
@@ -105,20 +174,27 @@ const buildGuide = (os: OS): Section[] => {
 
   const bridgeStep: Section = {
     id: "bridge",
-    title: "3. Set up the bridge daemon",
+    title: "3. Set up the bridge daemon (manual)",
     icon: Cpu,
     intro:
       "The bridge is a tiny Python WebSocket server that runs on your machine and turns gestures into real OS mouse + keyboard events.",
     steps: [
       { label: "Move into the bridge folder:", cmd: "cd bridge" },
       { label: "Create an isolated Python environment:", cmd: `${py} -m venv .venv` },
-      { label: "Activate it:", cmd: activate },
-      { label: "Install the dependencies:", cmd: "pip install -r requirements.txt" },
+      {
+        label: "Activate it:",
+        cmd: activate,
+        note: isWin
+          ? 'If PowerShell blocks the script, run first: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass'
+          : undefined,
+      },
+      { label: "Upgrade pip, then install the dependencies:", cmd: "python -m pip install --upgrade pip\npip install -r requirements.txt", multiline: true },
       ...(os === "linux"
         ? [
             {
               label: "Linux only — allow your user to send synthetic input via /dev/uinput:",
-              cmd: `echo 'KERNEL=="uinput", GROUP="input", MODE="0660"' | sudo tee /etc/udev/rules.d/99-uinput.rules && sudo usermod -aG input "$USER" && sudo modprobe uinput && sudo udevadm control --reload-rules && sudo udevadm trigger`,
+              cmd: `echo 'KERNEL=="uinput", GROUP="input", MODE="0660"' | sudo tee /etc/udev/rules.d/99-uinput.rules\nsudo usermod -aG input "$USER"\nsudo modprobe uinput\nsudo udevadm control --reload-rules && sudo udevadm trigger`,
+              multiline: true,
               note: "Log out and back in afterwards so the new group takes effect.",
             },
           ]
@@ -133,7 +209,7 @@ const buildGuide = (os: OS): Section[] => {
         : []),
       {
         label: "Start the bridge daemon (keep this terminal open):",
-        cmd: `${py} omnipoint_bridge.py`,
+        cmd: isWin ? "python omnipoint_bridge.py" : `${py} omnipoint_bridge.py`,
       },
       {
         label:
@@ -144,7 +220,7 @@ const buildGuide = (os: OS): Section[] => {
 
   const webStep: Section = {
     id: "web",
-    title: "4. Run the BreezeControl web app locally",
+    title: "4. Run the BreezeControl web app",
     icon: Globe,
     intro:
       "You can either use the hosted version at breezecontrol.lovable.app, or run the web app on your own machine using Node + npm.",
@@ -155,7 +231,7 @@ const buildGuide = (os: OS): Section[] => {
       },
       {
         label:
-          "Or run it locally — install Node.js 18+ from nodejs.org first, then in a NEW terminal:",
+          "Or run it locally — install Node.js 18+ from nodejs.org first (one-shot above does this for you), then in a NEW terminal:",
       },
       { label: "Go back to the project root:", cmd: "cd .." },
       { label: "Install web dependencies:", cmd: "npm install" },
@@ -164,6 +240,13 @@ const buildGuide = (os: OS): Section[] => {
         label: "Open the URL it prints (usually):",
         cmd: "http://localhost:8080",
       },
+      ...(isWin
+        ? [
+            {
+              label: 'PowerShell tip — `&&` is not supported. Run commands on separate lines, or use ";" between them.',
+            },
+          ]
+        : []),
     ],
   };
 
@@ -190,7 +273,7 @@ const buildGuide = (os: OS): Section[] => {
     ],
   };
 
-  return [pythonInstall, repoStep, bridgeStep, webStep, connectStep];
+  return [oneShot, pythonInstall, repoStep, bridgeStep, webStep, connectStep];
 };
 
 const isOS = (s: string | undefined): s is OS =>
@@ -294,12 +377,30 @@ const BridgeGuideOS = () => {
           {sections.map((sec) => {
             const SecIcon = sec.icon;
             return (
-              <section key={sec.id}>
+              <section
+                key={sec.id}
+                className={
+                  sec.highlight
+                    ? "border-2 border-primary/40 bg-primary/[0.04] rounded-2xl p-5 -mx-1"
+                    : ""
+                }
+              >
                 <div className="flex items-center gap-2.5 mb-3">
-                  <div className="w-8 h-8 grid place-items-center border border-primary/30 bg-primary/5 rounded-lg">
-                    <SecIcon className="w-4 h-4 text-primary" />
+                  <div
+                    className={`w-8 h-8 grid place-items-center border rounded-lg ${
+                      sec.highlight
+                        ? "border-primary/60 bg-primary/15"
+                        : "border-primary/30 bg-primary/5"
+                    }`}
+                  >
+                    <SecIcon className={`w-4 h-4 ${sec.highlight ? "text-primary" : "text-primary"}`} />
                   </div>
                   <h2 className="text-lg font-semibold tracking-tight">{sec.title}</h2>
+                  {sec.highlight && (
+                    <span className="ml-auto font-mono text-[10px] tracking-[0.25em] text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-full">
+                      EASY
+                    </span>
+                  )}
                 </div>
                 {sec.intro && (
                   <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
@@ -318,13 +419,23 @@ const BridgeGuideOS = () => {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm text-foreground">{step.label}</div>
                         {step.cmd && (
-                          <div className="mt-1.5 flex items-center gap-2 bg-background border border-border px-3 py-2 rounded-lg">
-                            <code className="flex-1 font-mono text-[12.5px] text-foreground/90 break-all">
-                              {step.cmd}
-                            </code>
+                          <div
+                            className={`mt-1.5 flex ${
+                              step.multiline ? "items-start" : "items-center"
+                            } gap-2 bg-background border border-border px-3 py-2 rounded-lg`}
+                          >
+                            {step.multiline ? (
+                              <pre className="flex-1 font-mono text-[12px] text-foreground/90 whitespace-pre-wrap break-all overflow-x-auto leading-relaxed m-0">
+{step.cmd}
+                              </pre>
+                            ) : (
+                              <code className="flex-1 font-mono text-[12.5px] text-foreground/90 break-all">
+                                {step.cmd}
+                              </code>
+                            )}
                             <button
                               onClick={() => copy(step.cmd!)}
-                              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                              className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
                               aria-label="Copy command"
                             >
                               {copied === step.cmd ? (
