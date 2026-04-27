@@ -94,11 +94,19 @@ Move-Item $projectCandidate.FullName $FinalDir
 Remove-Item -Recurse -Force $TmpExtract
 Set-Location $FinalDir
 $ProjectRoot = $PWD.Path
-if (-not (Test-Path (Join-Path $ProjectRoot 'bridge'))) { Write-Host "ERROR: bridge folder missing after extraction" -ForegroundColor Red; exit 1 }
+$BridgePath = Join-Path $ProjectRoot 'bridge'
+if (-not (Test-Path $BridgePath)) {
+  Step '3b' "Repo ZIP is missing bridge files — downloading hosted bridge fallback"
+  New-Item -ItemType Directory -Force -Path $BridgePath | Out-Null
+  Invoke-WebRequest -Uri "${BRIDGE_ASSET_BASE}/requirements.txt"    -OutFile (Join-Path $BridgePath 'requirements.txt')
+  Invoke-WebRequest -Uri "${BRIDGE_ASSET_BASE}/README.md"            -OutFile (Join-Path $BridgePath 'README.md')
+  Invoke-WebRequest -Uri "${BRIDGE_ASSET_BASE}/omnipoint_bridge.py" -OutFile (Join-Path $BridgePath 'omnipoint_bridge.py')
+}
+if (-not (Test-Path (Join-Path $BridgePath 'requirements.txt'))) { Write-Host "ERROR: requirements.txt missing at $BridgePath" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path (Join-Path $BridgePath 'omnipoint_bridge.py'))) { Write-Host "ERROR: omnipoint_bridge.py missing at $BridgePath" -ForegroundColor Red; exit 1 }
 Write-Host "    project root: $ProjectRoot" -ForegroundColor DarkGray
 
 Step 4 "Creating Python venv + installing bridge requirements (absolute paths)"
-$BridgePath = Join-Path $ProjectRoot 'bridge'
 if (-not (Test-Path $BridgePath)) { Write-Host "ERROR: bridge folder not found at $BridgePath" -ForegroundColor Red; exit 1 }
 $RequirementsFile = Join-Path $BridgePath 'requirements.txt'
 if (-not (Test-Path $RequirementsFile)) { Write-Host "ERROR: requirements.txt not found at $RequirementsFile" -ForegroundColor Red; exit 1 }
