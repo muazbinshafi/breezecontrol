@@ -340,7 +340,7 @@ const Demo = () => {
           setBridgeUrl={setBridgeUrl}
           onTestBridge={handleTestBridge}
         />
-        {!showInit && controlMode === "browser" && browserCursor.mode === "draw" && (
+        {!showInit && browserCursor.mode === "draw" && (
           <>
             <PaintToolbar
               onClear={browserCursor.clearDrawing}
