@@ -156,14 +156,15 @@ curl -L "${REPO_ZIP}" -o breezecontrol.zip
 step 3 "Extracting to a temp folder, then atomically moving into place"
 TMP_EXTRACT="$(mktemp -d "$HOME/Downloads/_bc_extract_XXXXXX")"
 unzip -oq breezecontrol.zip -d "$TMP_EXTRACT"
-EXTRACTED="$(find "$TMP_EXTRACT" -mindepth 1 -maxdepth 1 -type d | head -n1)"
-if [ -z "$EXTRACTED" ]; then err "extraction failed — no folder inside ZIP"; exit 1; fi
+PROJECT_CANDIDATE="$(find "$TMP_EXTRACT" -type d \( -exec test -d '{}/bridge' ';' -a -exec test -f '{}/package.json' ';' \) | head -n1)"
+if [ -z "$PROJECT_CANDIDATE" ]; then err "could not locate extracted BreezeControl project root"; exit 1; fi
 FINAL_DIR="$HOME/Downloads/${REPO_DIR}"
 rm -rf "$FINAL_DIR"
-mv "$EXTRACTED" "$FINAL_DIR"
+mv "$PROJECT_CANDIDATE" "$FINAL_DIR"
 rm -rf "$TMP_EXTRACT"
 cd "$FINAL_DIR"
 PROJECT_ROOT="$PWD"
+[ -d "$PROJECT_ROOT/bridge" ] || { err "bridge folder missing after extraction"; exit 1; }
 ok "project root: $PROJECT_ROOT"
 
 step 4 "Creating Python venv + installing bridge requirements"
