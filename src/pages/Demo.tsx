@@ -1,25 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { InitScreen } from "@/components/omnipoint/InitScreen";
-import { StatusBar } from "@/components/omnipoint/StatusBar";
 import { SensorPanel } from "@/components/omnipoint/SensorPanel";
 import { TelemetryPanel } from "@/components/omnipoint/TelemetryPanel";
 import { BridgeTroubleshooter } from "@/components/omnipoint/BridgeTroubleshooter";
-import { ControlModeBar, type ControlMode } from "@/components/omnipoint/ControlModeBar";
+import { type ControlMode } from "@/components/omnipoint/ControlModeBar";
+import { DemoTopBar } from "@/components/omnipoint/DemoTopBar";
 import { GestureEngine, defaultConfig, type EngineConfig } from "@/lib/omnipoint/GestureEngine";
 import { HIDBridge } from "@/lib/omnipoint/HIDBridge";
 import { TelemetryStore } from "@/lib/omnipoint/TelemetryStore";
 import { ThemeSettings } from "@/components/ThemeSettings";
 import { PaintToolbar } from "@/components/omnipoint/PaintToolbar";
-import { GestureSettingsPanel } from "@/components/omnipoint/GestureSettingsPanel";
 import { useBrowserCursor } from "@/hooks/useBrowserCursor";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Gauge, Wand2 } from "lucide-react";
 import { CalibrationWizard } from "@/components/omnipoint/CalibrationWizard";
 import { PerformanceHUD } from "@/components/omnipoint/PerformanceHUD";
 import { GestureTour } from "@/components/omnipoint/GestureTour";
-import { HelpCircle } from "lucide-react";
-import { TelemetryQualityBadge } from "@/components/omnipoint/TelemetryQualityBadge";
 import { PinchConfidenceOverlay } from "@/components/omnipoint/PinchConfidenceOverlay";
 import { onEngineConfigApply } from "@/lib/omnipoint/GestureProfiles";
 import { GestureSettingsStore } from "@/lib/omnipoint/GestureSettings";
@@ -272,69 +267,24 @@ const Demo = () => {
   return (
       <main className="h-[100dvh] w-screen flex flex-col bg-background text-foreground overflow-hidden">
         <h1 className="sr-only">BreezeControl — Live Sensor</h1>
-        {!showInit && <StatusBar onEmergencyToggle={handleEmergencyToggle} />}
         {!showInit && (
-          <ControlModeBar
+          <DemoTopBar
             controlMode={controlMode}
             onControlModeChange={setControlMode}
             cursorMode={browserCursor.mode}
             onCursorModeChange={browserCursor.setMode}
             onClearDrawing={browserCursor.clearDrawing}
+            onEmergencyToggle={handleEmergencyToggle}
+            config={config}
+            setConfig={setConfig}
+            bridgeUrl={bridgeUrl}
+            setBridgeUrl={setBridgeUrl}
+            onReconnect={handleReconnect}
+            onTestBridge={handleTestBridge}
+            onOpenTroubleshooter={() => setTroubleshooterOpen(true)}
+            onOpenTour={() => setTourOpen(true)}
+            onOpenCalibration={() => setCalibrationOpen(true)}
           />
-        )}
-        {!showInit && (
-          <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5 sm:gap-2">
-            <TelemetryQualityBadge />
-            {/* On mobile/tablet the telemetry side-panel becomes a slide-up sheet */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <button
-                  className="lg:hidden font-mono text-[10px] tracking-[0.3em] px-3 h-9 inline-flex items-center gap-1.5 border hairline text-muted-foreground hover:text-foreground bg-card/60 backdrop-blur"
-                  aria-label="Open telemetry panel"
-                >
-                  <Gauge className="w-3.5 h-3.5" />
-                  TELEMETRY
-                </button>
-              </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-[92vw] sm:w-[420px] p-0 overflow-y-auto bg-card"
-              >
-                <TelemetryPanel
-                  config={config}
-                  setConfig={setConfig}
-                  bridgeUrl={bridgeUrl}
-                  setBridgeUrl={setBridgeUrl}
-                  onReconnect={handleReconnect}
-                  onTestBridge={handleTestBridge}
-                  onOpenTroubleshooter={() => setTroubleshooterOpen(true)}
-                />
-              </SheetContent>
-            </Sheet>
-            <GestureSettingsPanel />
-            <button
-              onClick={() => setTourOpen(true)}
-              title="Show gesture guide"
-              className="font-mono text-[10px] tracking-[0.3em] px-3 h-9 inline-flex items-center gap-1.5 border hairline text-muted-foreground hover:text-foreground bg-card/60 backdrop-blur"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              GUIDE
-            </button>
-            <button
-              onClick={() => setCalibrationOpen(true)}
-              title="Re-run calibration"
-              className="font-mono text-[10px] tracking-[0.3em] px-3 h-9 inline-flex items-center gap-1.5 border hairline text-muted-foreground hover:text-foreground bg-card/60 backdrop-blur"
-            >
-              <Wand2 className="w-3.5 h-3.5" />
-              CALIBRATE
-            </button>
-            <Link
-              to="/"
-              className="font-mono text-[10px] tracking-[0.3em] px-3 h-9 inline-flex items-center border hairline text-muted-foreground hover:text-foreground bg-card/60 backdrop-blur"
-            >
-              ← HOME
-            </Link>
-          </div>
         )}
         <div
           className={`flex-1 min-h-0 gap-2 p-2 flex ${showInit ? "invisible absolute inset-0 pointer-events-none" : ""}`}
