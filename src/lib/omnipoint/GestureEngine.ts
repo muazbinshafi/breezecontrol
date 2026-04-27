@@ -163,12 +163,16 @@ export class GestureEngine {
     );
     onProgress?.("Loading HandLandmarker model...");
     const baseOpts = {
-      numHands: 1,
+      // Detect up to 2 hands so users can use either / both. The active
+      // controller hand is selected per-frame by handedness + confidence.
+      numHands: 2,
       runningMode: "VIDEO" as const,
-      // Higher thresholds reject low-confidence frames → fewer phantom poses.
-      minHandDetectionConfidence: 0.5,
-      minHandPresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
+      // Lowered floors: 0.5 was too aggressive — slightly off-axis or
+      // dim-lit hands were rejected entirely. 0.3 still cuts background
+      // noise but recovers far more weak/distant detections.
+      minHandDetectionConfidence: 0.3,
+      minHandPresenceConfidence: 0.3,
+      minTrackingConfidence: 0.3,
     };
     const modelAssetPath =
       "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
@@ -238,9 +242,20 @@ export class GestureEngine {
 
     let confidence = 0;
     if (result.landmarks.length > 0) {
-      // handedness score as proxy for confidence
-      confidence = result.handedness?.[0]?.[0]?.score ?? 0.8;
-      this.processLandmarks(result, tNow);
+      // Pick the most-confident hand as the controller (handedness score is
+      // MediaPipe's per-hand confidence). This way the user can use either
+      // hand and the system always tracks the strongest signal.
+      let bestIdx = 0;
+      let bestScore = result.handedness?.[0]?.[0]?.score ?? 0;
+      for (let i = 1; i < result.landmarks.length; i++) {
+        const s = result.handedness?.[i]?.[0]?.score ?? 0;
+        if (s > bestScore) {
+          bestScore = s;
+          bestIdx = i;
+        }
+      }
+      confidence = bestScore || 0.8;
+      this.processLandmarks(result, tNow, bestIdx);
     } else {
       confidence = 0;
       this.smoothedIndex = null;
@@ -282,8 +297,9 @@ export class GestureEngine {
     this.draw(result);
   }
 
-  private processLandmarks(result: HandLandmarkerResult, tNow: number) {
-    const lm = result.landmarks[0];
+  private processLandmarks(result: HandLandmarkerResult, tNow: number, handIdx = 0) {
+    const lm = result.landmarks[handIdx];
+    const handednessSrc = result.handedness?.[handIdx]?.[0]?.categoryName ?? "";
     const thumbTip = lm[4];
     const indexTip = lm[8];
     const middleTip = lm[12];
@@ -424,9 +440,8 @@ export class GestureEngine {
     const fingersExtended: [boolean, boolean, boolean, boolean, boolean] =
       [thumbExt, indexExt, middleExt, ringExt, pinkyExt];
     const fingerCount = fingersExtended.filter(Boolean).length;
-    const rawHandLabel = result.handedness?.[0]?.[0]?.categoryName ?? "";
     // MediaPipe returns mirrored handedness for selfie cam — flip it.
-    const handedness = rawHandLabel === "Left" ? "Right" : rawHandLabel === "Right" ? "Left" : "none";
+    const handedness = handednessSrc === "Left" ? "Right" : handednessSrc === "Right" ? "Left" : "none";
 
     // Three-finger pinch (thumb + index + middle close together) → right click
     const tmPinchRaw = Math.hypot(
@@ -669,37 +684,72 @@ export class GestureEngine {
 
     if (!result || result.landmarks.length === 0) return;
 
-    const lm = result.landmarks[0];
-    // Mirror landmarks horizontally to match mirrored video
-    const pts = lm.map((p) => ({ x: (1 - p.x) * w, y: p.y * h }));
+    // Draw EVERY detected hand. The non-controller hand is rendered in a
+    // muted tone so the user can see they're being tracked even though
+    // only one hand drives the cursor.
+    for (let hi = 0; hi < result.landmarks.length; hi++) {
+      const lm = result.landmarks[hi];
+      const isPrimary =
+        hi ===
+        result.landmarks
+          .map((_, i) => result.handedness?.[i]?.[0]?.score ?? 0)
+          .reduce((bi, s, i, arr) => (s > arr[bi] ? i : bi), 0);
 
-    // Bones
-    ctx.strokeStyle = "hsl(160 84% 50%)";
-    ctx.lineWidth = 2;
-    ctx.shadowColor = "hsl(160 84% 50%)";
-    ctx.shadowBlur = 6;
-    for (const [a, b] of HAND_CONNECTIONS) {
-      ctx.beginPath();
-      ctx.moveTo(pts[a].x, pts[a].y);
-      ctx.lineTo(pts[b].x, pts[b].y);
-      ctx.stroke();
-    }
-    ctx.shadowBlur = 0;
+      // Mirror landmarks horizontally to match mirrored video
+      const pts = lm.map((p) => ({ x: (1 - p.x) * w, y: p.y * h }));
 
-    // Joints
-    ctx.fillStyle = "hsl(160 84% 60%)";
-    for (const p of pts) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
+      const boneColor = isPrimary ? "hsl(160 84% 50%)" : "hsl(160 30% 45%)";
+      const jointColor = isPrimary ? "hsl(160 84% 60%)" : "hsl(160 25% 55%)";
+      const tipColor = isPrimary ? "white" : "hsl(0 0% 75%)";
 
-    // Highlight thumb (4) and index (8)
-    ctx.fillStyle = "white";
-    for (const i of [4, 8]) {
-      ctx.beginPath();
-      ctx.arc(pts[i].x, pts[i].y, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      // Bones
+      ctx.strokeStyle = boneColor;
+      ctx.lineWidth = isPrimary ? 2 : 1.5;
+      ctx.shadowColor = boneColor;
+      ctx.shadowBlur = isPrimary ? 6 : 0;
+      for (const [a, b] of HAND_CONNECTIONS) {
+        ctx.beginPath();
+        ctx.moveTo(pts[a].x, pts[a].y);
+        ctx.lineTo(pts[b].x, pts[b].y);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+
+      // Joints — skip wrist (0), it gets a special diamond marker below.
+      ctx.fillStyle = jointColor;
+      for (let i = 1; i < pts.length; i++) {
+        ctx.beginPath();
+        ctx.arc(pts[i].x, pts[i].y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Highlight thumb (4) and index (8)
+      ctx.fillStyle = tipColor;
+      for (const i of [4, 8]) {
+        ctx.beginPath();
+        ctx.arc(pts[i].x, pts[i].y, isPrimary ? 3.5 : 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4-SIDED HAND-CENTER MARKER on the wrist (landmark 0).
+      // Drawn as a rotated square (diamond) with an outlined fill so it
+      // reads as the hand's anchor point at any zoom level.
+      const wp = pts[0];
+      const r = isPrimary ? 7 : 5;
+      ctx.save();
+      ctx.translate(wp.x, wp.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = isPrimary
+        ? "hsla(160, 84%, 55%, 0.85)"
+        : "hsla(160, 30%, 55%, 0.6)";
+      ctx.strokeStyle = isPrimary ? "white" : "hsl(0 0% 80%)";
+      ctx.lineWidth = isPrimary ? 1.5 : 1;
+      ctx.shadowColor = boneColor;
+      ctx.shadowBlur = isPrimary ? 8 : 0;
+      ctx.fillRect(-r, -r, r * 2, r * 2);
+      ctx.strokeRect(-r, -r, r * 2, r * 2);
+      ctx.shadowBlur = 0;
+      ctx.restore();
     }
 
     // Cursor crosshair (in active zone -> camera coords)

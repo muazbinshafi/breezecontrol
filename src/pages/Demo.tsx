@@ -38,7 +38,14 @@ const Demo = () => {
   const bridgeRef = useRef<HIDBridge | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const browserCursor = useBrowserCursor(initialized && controlMode === "browser", "pointer");
+  // The in-page browser cursor stays mounted in BOTH modes so the user can
+  // still draw on the page while the bridge drives their real OS cursor.
+  // Defaults to OFF in bridge mode (so it doesn't fight the OS cursor)
+  // and POINTER in browser mode.
+  const browserCursor = useBrowserCursor(
+    initialized,
+    controlMode === "bridge" ? "off" : "pointer",
+  );
 
   useEffect(() => {
     document.title = "Live Sensor — BreezeControl";
@@ -333,7 +340,7 @@ const Demo = () => {
           setBridgeUrl={setBridgeUrl}
           onTestBridge={handleTestBridge}
         />
-        {!showInit && controlMode === "browser" && browserCursor.mode === "draw" && (
+        {!showInit && browserCursor.mode === "draw" && (
           <>
             <PaintToolbar
               onClear={browserCursor.clearDrawing}
