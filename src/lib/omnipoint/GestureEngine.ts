@@ -216,6 +216,45 @@ export class GestureEngine {
     this.originOffset.y = this.smoothedIndex[1] - 0.5;
   }
 
+  /**
+   * Hard-reset all transient detection state. Useful when the calibration UI
+   * detects the engine is "stuck" in SENSOR LOST / searching — clears every
+   * filter and the click state machine so the next frame starts fresh.
+   */
+  resetState() {
+    this.fThumb.reset();
+    this.fIndex.reset();
+    this.fIndexMcp.reset();
+    this.fWrist.reset();
+    this.fMiddleTip.reset();
+    this.fCursor.reset();
+    this.smoothedThumb = null;
+    this.smoothedIndex = null;
+    this.prevIndex = null;
+    this.prevPinch = null;
+    this.prevPinchT = 0;
+    this.pinchVelocity = 0;
+    this.cursorSpeed = 0;
+    this.clickState = "IDLE";
+    this.pinchStartTs = 0;
+    this.gestureCandidate = "none";
+    this.gestureCandidateCount = 0;
+    this.committedGesture = "none";
+    this.lastScrollY = null;
+    this.lastVideoTime = -1;
+    TelemetryStore.set({
+      sensorLost: false,
+      handPresent: false,
+      handedness: "none",
+      fingersExtended: [false, false, false, false, false],
+      fingerCount: 0,
+      pinchDistance: 0,
+      gesture: "none",
+      landmarks: [],
+      confidence: 0,
+    });
+  }
+
 
   private tick() {
     if (!this.landmarker || this.video.readyState < 2) return;
