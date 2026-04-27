@@ -383,6 +383,7 @@ const Demo = () => {
             onClose={() => setTourOpen(false)}
             autoShow
           />
+        )}
         {!showInit && (
           <LiveCalibrationPanel
             open={livePanelOpen}
