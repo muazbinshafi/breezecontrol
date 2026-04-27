@@ -163,12 +163,16 @@ export class GestureEngine {
     );
     onProgress?.("Loading HandLandmarker model...");
     const baseOpts = {
-      numHands: 1,
+      // Detect up to 2 hands so users can use either / both. The active
+      // controller hand is selected per-frame by handedness + confidence.
+      numHands: 2,
       runningMode: "VIDEO" as const,
-      // Higher thresholds reject low-confidence frames → fewer phantom poses.
-      minHandDetectionConfidence: 0.5,
-      minHandPresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
+      // Lowered floors: 0.5 was too aggressive — slightly off-axis or
+      // dim-lit hands were rejected entirely. 0.3 still cuts background
+      // noise but recovers far more weak/distant detections.
+      minHandDetectionConfidence: 0.3,
+      minHandPresenceConfidence: 0.3,
+      minTrackingConfidence: 0.3,
     };
     const modelAssetPath =
       "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
