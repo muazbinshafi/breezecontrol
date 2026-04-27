@@ -59,45 +59,62 @@ const REPO_DIR = "airtouch-v8-main";
 // download repo zip → extract → install Python/Node → venv → deps → launch bridge + web app.
 const ONE_SHOT: Record<OS, string> = {
   windows: `# === BreezeControl one-shot installer (Windows / PowerShell) ===
-# Run from ANY folder — downloads, extracts, installs, and launches everything.
+# Always installs into your Downloads folder — safe to re-run.
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+$Downloads = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
+if (-not $Downloads) { $Downloads = Join-Path $env:USERPROFILE 'Downloads' }
+Set-Location $Downloads
 if (-not (Get-Command py   -ErrorAction SilentlyContinue)) { winget install -e --id Python.Python.3.11 --accept-source-agreements --accept-package-agreements }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install -e --id OpenJS.NodeJS.LTS    --accept-source-agreements --accept-package-agreements }
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+if (Test-Path "${REPO_DIR}") { Remove-Item -Recurse -Force "${REPO_DIR}" }
+if (Test-Path "breezecontrol.zip") { Remove-Item -Force "breezecontrol.zip" }
 Invoke-WebRequest -Uri "${REPO_ZIP}" -OutFile "breezecontrol.zip"
-Expand-Archive -Force "breezecontrol.zip" -DestinationPath "."
+Expand-Archive -Force "breezecontrol.zip" -DestinationPath "_bc_tmp"
+$extracted = Get-ChildItem "_bc_tmp" -Directory | Select-Object -First 1
+Move-Item $extracted.FullName "${REPO_DIR}"
+Remove-Item -Recurse -Force "_bc_tmp"
 Set-Location "${REPO_DIR}"
-Push-Location bridge
+$ProjectRoot = $PWD.Path
+Set-Location bridge
 py -m venv .venv
 .\\.venv\\Scripts\\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-Start-Process powershell -ArgumentList '-NoExit','-Command',"cd '$PWD'; .\\.venv\\Scripts\\Activate.ps1; python omnipoint_bridge.py"
-Pop-Location
+$BridgePath = $PWD.Path
+Start-Process powershell -ArgumentList '-NoExit','-Command',"cd '$BridgePath'; .\\.venv\\Scripts\\Activate.ps1; python omnipoint_bridge.py"
+Set-Location $ProjectRoot
 npm install
 npm run dev`,
   macos: `# === BreezeControl one-shot installer (macOS / Terminal) ===
-# Run from ANY folder — downloads, extracts, installs, and launches everything.
+# Always installs into ~/Downloads — safe to re-run.
 set -e
+cd "$HOME/Downloads"
 if ! command -v brew >/dev/null 2>&1; then /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; fi
 brew list python@3.11 >/dev/null 2>&1 || brew install python@3.11
 brew list node        >/dev/null 2>&1 || brew install node
+rm -rf "${REPO_DIR}" breezecontrol.zip
 curl -L "${REPO_ZIP}" -o breezecontrol.zip
 unzip -oq breezecontrol.zip
-cd ${REPO_DIR}
+cd "${REPO_DIR}"
+PROJECT_ROOT="$PWD"
 cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
-osascript -e 'tell application "Terminal" to do script "cd \\"'"$PWD"'\\" && source .venv/bin/activate && python3 omnipoint_bridge.py"'
-cd .. && npm install && npm run dev`,
+BRIDGE_PATH="$PWD"
+osascript -e 'tell application "Terminal" to do script "cd \\"'"$BRIDGE_PATH"'\\" && source .venv/bin/activate && python3 omnipoint_bridge.py"'
+cd "$PROJECT_ROOT" && npm install && npm run dev`,
   linux: `# === BreezeControl one-shot installer (Linux — Debian/Ubuntu/Kali) ===
-# Run from ANY folder — downloads, extracts, installs, and launches everything.
+# Always installs into ~/Downloads — safe to re-run.
 set -e
+mkdir -p "$HOME/Downloads" && cd "$HOME/Downloads"
 sudo apt update && sudo apt install -y python3 python3-venv python3-pip nodejs npm git curl unzip
+rm -rf "${REPO_DIR}" breezecontrol.zip
 curl -L "${REPO_ZIP}" -o breezecontrol.zip
 unzip -oq breezecontrol.zip
-cd ${REPO_DIR}
+cd "${REPO_DIR}"
+PROJECT_ROOT="$PWD"
 cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
 (python3 omnipoint_bridge.py >/tmp/breezebridge.log 2>&1 &) && echo "bridge started in background — log: /tmp/breezebridge.log"
-cd .. && npm install && npm run dev`,
+cd "$PROJECT_ROOT" && npm install && npm run dev`,
 };
 
 const buildGuide = (os: OS): Section[] => {
@@ -113,10 +130,10 @@ const buildGuide = (os: OS): Section[] => {
     highlight: true,
     intro:
       os === "windows"
-        ? "Open PowerShell in ANY folder (e.g. Downloads) and paste the block below. It installs Python + Node via winget, downloads & extracts the project ZIP from GitHub, sets up the venv, installs all deps, opens the bridge in a second window, and starts the web app. Nothing else required — skip steps 1–4 if this works."
+        ? "Open PowerShell anywhere and paste the block below. It auto-jumps to your Downloads folder, installs Python + Node via winget, downloads & extracts the project ZIP from GitHub (cleaning any previous copy), sets up the venv, opens the bridge in a second window, and starts the web app. Safe to re-run."
         : os === "macos"
-          ? "Open Terminal in ANY folder and paste the block below. It installs Homebrew/Python/Node if missing, downloads & unzips the project from GitHub, sets up the venv, opens the bridge in a new Terminal tab, and starts the web app."
-          : "Open a terminal in ANY folder and paste the block below. It installs all OS deps via apt, downloads & unzips the project from GitHub, sets up the venv, runs the bridge in the background, and starts the web app.",
+          ? "Open Terminal anywhere and paste the block below. It auto-jumps to ~/Downloads, installs Homebrew/Python/Node if missing, downloads & unzips the project (cleaning any previous copy), sets up the venv, opens the bridge in a new Terminal tab, and starts the web app. Safe to re-run."
+          : "Open a terminal anywhere and paste the block below. It auto-jumps to ~/Downloads, installs all OS deps via apt, downloads & unzips the project (cleaning any previous copy), runs the bridge in the background, and starts the web app. Safe to re-run.",
     steps: [
       {
         label: "Paste this entire block — it does everything end-to-end:",
