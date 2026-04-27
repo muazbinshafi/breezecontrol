@@ -171,7 +171,7 @@ curl -L "${REPO_ZIP}" -o breezecontrol.zip
 step 3 "Extracting to a temp folder, then atomically moving into place"
 TMP_EXTRACT="$(mktemp -d "$HOME/Downloads/_bc_extract_XXXXXX")"
 unzip -oq breezecontrol.zip -d "$TMP_EXTRACT"
-PROJECT_CANDIDATE="$(find "$TMP_EXTRACT" -type d \( -exec test -d '{}/bridge' ';' -a -exec test -f '{}/package.json' ';' \) | head -n1)"
+PROJECT_CANDIDATE="$(find "$TMP_EXTRACT" -type d \( -exec test -f '{}/package.json' ';' \) | head -n1)"
 if [ -z "$PROJECT_CANDIDATE" ]; then err "could not locate extracted BreezeControl project root"; exit 1; fi
 FINAL_DIR="$HOME/Downloads/${REPO_DIR}"
 rm -rf "$FINAL_DIR"
@@ -179,11 +179,20 @@ mv "$PROJECT_CANDIDATE" "$FINAL_DIR"
 rm -rf "$TMP_EXTRACT"
 cd "$FINAL_DIR"
 PROJECT_ROOT="$PWD"
-[ -d "$PROJECT_ROOT/bridge" ] || { err "bridge folder missing after extraction"; exit 1; }
+BRIDGE_PATH="$PROJECT_ROOT/bridge"
+if [ ! -d "$BRIDGE_PATH" ] || [ ! -f "$BRIDGE_PATH/requirements.txt" ] || [ ! -f "$BRIDGE_PATH/omnipoint_bridge.py" ]; then
+  step 3b "Repo ZIP is missing bridge files — downloading hosted bridge fallback"
+  mkdir -p "$BRIDGE_PATH"
+  curl -fsSL "${BRIDGE_ASSET_BASE}/requirements.txt" -o "$BRIDGE_PATH/requirements.txt"
+  curl -fsSL "${BRIDGE_ASSET_BASE}/README.md" -o "$BRIDGE_PATH/README.md"
+  curl -fsSL "${BRIDGE_ASSET_BASE}/omnipoint_bridge.py" -o "$BRIDGE_PATH/omnipoint_bridge.py"
+fi
+[ -f "$BRIDGE_PATH/requirements.txt" ] || { err "requirements.txt missing after fallback"; exit 1; }
+[ -f "$BRIDGE_PATH/omnipoint_bridge.py" ] || { err "omnipoint_bridge.py missing after fallback"; exit 1; }
 ok "project root: $PROJECT_ROOT"
 
 step 4 "Creating Python venv + installing bridge requirements"
-cd bridge
+cd "$BRIDGE_PATH"
 BRIDGE_PATH="$PWD"
 python3 -m venv .venv
 source .venv/bin/activate
