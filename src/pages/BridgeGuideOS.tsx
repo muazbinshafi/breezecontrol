@@ -85,12 +85,15 @@ New-Item -ItemType Directory -Force -Path $TmpExtract | Out-Null
 Expand-Archive -Force "breezecontrol.zip" -DestinationPath $TmpExtract
 $extracted = Get-ChildItem $TmpExtract -Directory | Select-Object -First 1
 if (-not $extracted) { Write-Host "ERROR: extraction failed — no folder inside ZIP" -ForegroundColor Red; exit 1 }
+$projectCandidate = Get-ChildItem $TmpExtract -Directory -Recurse | Where-Object { (Test-Path (Join-Path $_.FullName 'bridge')) -and (Test-Path (Join-Path $_.FullName 'package.json')) } | Sort-Object FullName | Select-Object -First 1
+if (-not $projectCandidate) { Write-Host "ERROR: could not locate extracted BreezeControl project root" -ForegroundColor Red; exit 1 }
 $FinalDir = Join-Path $Downloads "${REPO_DIR}"
 if (Test-Path $FinalDir) { Remove-Item -Recurse -Force $FinalDir }
-Move-Item $extracted.FullName $FinalDir
+Move-Item $projectCandidate.FullName $FinalDir
 Remove-Item -Recurse -Force $TmpExtract
 Set-Location $FinalDir
 $ProjectRoot = $PWD.Path
+if (-not (Test-Path (Join-Path $ProjectRoot 'bridge'))) { Write-Host "ERROR: bridge folder missing after extraction" -ForegroundColor Red; exit 1 }
 Write-Host "    project root: $ProjectRoot" -ForegroundColor DarkGray
 
 Step 4 "Creating Python venv + installing bridge requirements"
