@@ -297,6 +297,8 @@ const Demo = () => {
             onOpenTroubleshooter={() => setTroubleshooterOpen(true)}
             onOpenTour={() => setTourOpen(true)}
             onOpenCalibration={() => setCalibrationOpen(true)}
+            onOpenLivePanel={() => setLivePanelOpen((v) => !v)}
+            livePanelOpen={livePanelOpen}
           />
         )}
         <div
