@@ -52,14 +52,21 @@ interface Section {
 
 const REPO_URL = "https://github.com/muazbinshafi/airtouch-v8";
 const REPO_CLONE = "git clone https://github.com/muazbinshafi/airtouch-v8.git";
+const REPO_ZIP = "https://github.com/muazbinshafi/airtouch-v8/archive/refs/heads/main.zip";
+const REPO_DIR = "airtouch-v8-main";
 
-// One-shot scripts that automate everything: deps check, venv, install, launch.
+// One-shot scripts that automate EVERYTHING from scratch:
+// download repo zip → extract → install Python/Node → venv → deps → launch bridge + web app.
 const ONE_SHOT: Record<OS, string> = {
-  windows: `# Run in PowerShell from the project root (airtouch-v8).
-# Allow this session to run scripts, then bootstrap + launch everything.
+  windows: `# === BreezeControl one-shot installer (Windows / PowerShell) ===
+# Run from ANY folder — downloads, extracts, installs, and launches everything.
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-if (-not (Get-Command py -ErrorAction SilentlyContinue)) { winget install -e --id Python.Python.3.11 --accept-source-agreements --accept-package-agreements }
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install -e --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements }
+if (-not (Get-Command py   -ErrorAction SilentlyContinue)) { winget install -e --id Python.Python.3.11 --accept-source-agreements --accept-package-agreements }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install -e --id OpenJS.NodeJS.LTS    --accept-source-agreements --accept-package-agreements }
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+Invoke-WebRequest -Uri "${REPO_ZIP}" -OutFile "breezecontrol.zip"
+Expand-Archive -Force "breezecontrol.zip" -DestinationPath "."
+Set-Location "${REPO_DIR}"
 Push-Location bridge
 py -m venv .venv
 .\\.venv\\Scripts\\Activate.ps1
@@ -69,19 +76,27 @@ Start-Process powershell -ArgumentList '-NoExit','-Command',"cd '$PWD'; .\\.venv
 Pop-Location
 npm install
 npm run dev`,
-  macos: `# Run in Terminal from the project root (airtouch-v8).
-# Installs Homebrew (if missing), Python, Node, sets up venv, and launches both.
+  macos: `# === BreezeControl one-shot installer (macOS / Terminal) ===
+# Run from ANY folder — downloads, extracts, installs, and launches everything.
+set -e
 if ! command -v brew >/dev/null 2>&1; then /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; fi
 brew list python@3.11 >/dev/null 2>&1 || brew install python@3.11
-brew list node >/dev/null 2>&1 || brew install node
+brew list node        >/dev/null 2>&1 || brew install node
+curl -L "${REPO_ZIP}" -o breezecontrol.zip
+unzip -oq breezecontrol.zip
+cd ${REPO_DIR}
 cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
 osascript -e 'tell application "Terminal" to do script "cd \\"'"$PWD"'\\" && source .venv/bin/activate && python3 omnipoint_bridge.py"'
 cd .. && npm install && npm run dev`,
-  linux: `# Run in your terminal from the project root (airtouch-v8).
-# Debian/Ubuntu/Kali version — installs deps, sets up venv, launches bridge + web app.
-sudo apt update && sudo apt install -y python3 python3-venv python3-pip nodejs npm git
+  linux: `# === BreezeControl one-shot installer (Linux — Debian/Ubuntu/Kali) ===
+# Run from ANY folder — downloads, extracts, installs, and launches everything.
+set -e
+sudo apt update && sudo apt install -y python3 python3-venv python3-pip nodejs npm git curl unzip
+curl -L "${REPO_ZIP}" -o breezecontrol.zip
+unzip -oq breezecontrol.zip
+cd ${REPO_DIR}
 cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
-(python3 omnipoint_bridge.py &) && echo "bridge started in background (PID $!)"
+(python3 omnipoint_bridge.py >/tmp/breezebridge.log 2>&1 &) && echo "bridge started in background — log: /tmp/breezebridge.log"
 cd .. && npm install && npm run dev`,
 };
 
