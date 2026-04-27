@@ -313,6 +313,31 @@ export class HIDBridge {
           bridgeProbeRttMs: rttMs,
         });
         BridgeLog.push(ok ? "ok" : "error", "probe", `${message} (${rttMs}ms)`);
+        // On success, opportunistically fetch the full daemon status so the
+        // Status bar can show version + screen size without a separate UI step.
+        if (ok) {
+          this.fetchDaemonStatus(1500)
+            .then((s) => {
+              if (!s.version && !s.screen) return;
+              TelemetryStore.set({
+                daemon: {
+                  version: s.version,
+                  os: typeof (s.raw as { os?: unknown })?.os === "string"
+                    ? ((s.raw as { os: string }).os)
+                    : undefined,
+                  sessionType: typeof (s.raw as { session_type?: unknown })?.session_type === "string"
+                    ? ((s.raw as { session_type: string }).session_type)
+                    : undefined,
+                  screen: s.screen,
+                  uinput: s.uinput,
+                  evdev: s.evdev,
+                },
+              });
+            })
+            .catch(() => { /* non-fatal */ });
+        } else {
+          TelemetryStore.set({ daemon: null });
+        }
         resolve({ ok, rttMs, message });
       };
       const timer = window.setTimeout(
