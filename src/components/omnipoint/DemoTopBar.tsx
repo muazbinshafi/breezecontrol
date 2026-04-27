@@ -300,6 +300,13 @@ export function DemoTopBar({
             >
               CALIBRATE
             </ToolbarButton>
+            <ToolbarButton
+              onClick={onOpenLivePanel}
+              icon={<SlidersHorizontal className="w-3.5 h-3.5" />}
+              active={livePanelOpen}
+            >
+              TUNE
+            </ToolbarButton>
             <Link
               to="/"
               className="font-mono text-[10px] tracking-[0.3em] px-3 h-8 inline-flex items-center gap-1.5 border hairline text-muted-foreground hover:text-foreground bg-card/60 rounded-md"
