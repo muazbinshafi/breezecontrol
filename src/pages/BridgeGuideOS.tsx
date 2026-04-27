@@ -60,61 +60,207 @@ const REPO_DIR = "airtouch-v8-main";
 const ONE_SHOT: Record<OS, string> = {
   windows: `# === BreezeControl one-shot installer (Windows / PowerShell) ===
 # Always installs into your Downloads folder — safe to re-run.
+function Step($n,$msg) { Write-Host ""; Write-Host "[$n] $msg" -ForegroundColor Cyan }
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 $Downloads = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
 if (-not $Downloads) { $Downloads = Join-Path $env:USERPROFILE 'Downloads' }
 Set-Location $Downloads
+$LogDir = Join-Path $Downloads 'breezecontrol-logs'
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+$BridgeLog = Join-Path $LogDir 'bridge.log'
+$WebLog    = Join-Path $LogDir 'web.log'
+
+Step 1 "Installing Python 3.11 + Node LTS (skipped if present)"
 if (-not (Get-Command py   -ErrorAction SilentlyContinue)) { winget install -e --id Python.Python.3.11 --accept-source-agreements --accept-package-agreements }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install -e --id OpenJS.NodeJS.LTS    --accept-source-agreements --accept-package-agreements }
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-if (Test-Path "${REPO_DIR}") { Remove-Item -Recurse -Force "${REPO_DIR}" }
+
+Step 2 "Downloading project ZIP from GitHub"
 if (Test-Path "breezecontrol.zip") { Remove-Item -Force "breezecontrol.zip" }
 Invoke-WebRequest -Uri "${REPO_ZIP}" -OutFile "breezecontrol.zip"
-Expand-Archive -Force "breezecontrol.zip" -DestinationPath "_bc_tmp"
-$extracted = Get-ChildItem "_bc_tmp" -Directory | Select-Object -First 1
-Move-Item $extracted.FullName "${REPO_DIR}"
-Remove-Item -Recurse -Force "_bc_tmp"
-Set-Location "${REPO_DIR}"
+
+Step 3 "Extracting to a temp folder, then atomically moving into place"
+$TmpExtract = Join-Path $Downloads ("_bc_extract_" + [System.Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Force -Path $TmpExtract | Out-Null
+Expand-Archive -Force "breezecontrol.zip" -DestinationPath $TmpExtract
+$extracted = Get-ChildItem $TmpExtract -Directory | Select-Object -First 1
+if (-not $extracted) { Write-Host "ERROR: extraction failed — no folder inside ZIP" -ForegroundColor Red; exit 1 }
+$FinalDir = Join-Path $Downloads "${REPO_DIR}"
+if (Test-Path $FinalDir) { Remove-Item -Recurse -Force $FinalDir }
+Move-Item $extracted.FullName $FinalDir
+Remove-Item -Recurse -Force $TmpExtract
+Set-Location $FinalDir
 $ProjectRoot = $PWD.Path
+Write-Host "    project root: $ProjectRoot" -ForegroundColor DarkGray
+
+Step 4 "Creating Python venv + installing bridge requirements"
 Set-Location bridge
+$BridgePath = $PWD.Path
 py -m venv .venv
 .\\.venv\\Scripts\\Activate.ps1
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip | Out-Null
 pip install -r requirements.txt
-$BridgePath = $PWD.Path
-Start-Process powershell -ArgumentList '-NoExit','-Command',"cd '$BridgePath'; .\\.venv\\Scripts\\Activate.ps1; python omnipoint_bridge.py"
+
+Step 5 "Launching bridge daemon in a NEW PowerShell window (venv pre-activated)"
+$BridgeCmd = "Set-Location '$BridgePath'; & '$BridgePath\\.venv\\Scripts\\Activate.ps1'; Write-Host 'bridge cwd:' (Get-Location); python omnipoint_bridge.py *>&1 | Tee-Object -FilePath '$BridgeLog'"
+Start-Process powershell -ArgumentList '-NoExit','-Command',$BridgeCmd
+
+Step 6 "Installing web app dependencies"
 Set-Location $ProjectRoot
 npm install
-npm run dev`,
+
+Step 7 "Starting Vite dev server in background (log: $WebLog)"
+$WebCmd = "Set-Location '$ProjectRoot'; npm run dev *>&1 | Tee-Object -FilePath '$WebLog'"
+Start-Process powershell -ArgumentList '-NoExit','-Command',$WebCmd
+
+Step 8 "Waiting for bridge (ws://127.0.0.1:8765) and web app (http://localhost:8080)"
+$bridgeUp = $false; $webUp = $false; $webUrl = "http://localhost:8080"
+for ($i=1; $i -le 60; $i++) {
+  if (-not $bridgeUp) { try { $c = New-Object System.Net.Sockets.TcpClient; $c.Connect('127.0.0.1',8765); $c.Close(); $bridgeUp = $true; Write-Host "    ✓ bridge reachable on ws://127.0.0.1:8765" -ForegroundColor Green } catch {} }
+  if (-not $webUp) { foreach ($p in 8080,5173,3000) { try { $r = Invoke-WebRequest -UseBasicParsing -Uri ("http://localhost:" + $p) -TimeoutSec 1; if ($r.StatusCode -lt 500) { $webUp = $true; $webUrl = "http://localhost:" + $p; Write-Host ("    ✓ web app reachable on " + $webUrl) -ForegroundColor Green; break } } catch {} } }
+  if ($bridgeUp -and $webUp) { break }
+  Start-Sleep -Seconds 1
+}
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Yellow
+if ($bridgeUp) { Write-Host "  BRIDGE : ws://127.0.0.1:8765   (log: $BridgeLog)" -ForegroundColor Green } else { Write-Host "  BRIDGE : NOT REACHABLE — see $BridgeLog" -ForegroundColor Red }
+if ($webUp)    { Write-Host "  WEB    : $webUrl   (log: $WebLog)" -ForegroundColor Green } else { Write-Host "  WEB    : NOT REACHABLE — see $WebLog" -ForegroundColor Red }
+Write-Host "============================================================" -ForegroundColor Yellow
+if ($webUp) { Start-Process $webUrl }`,
+
   macos: `# === BreezeControl one-shot installer (macOS / Terminal) ===
 # Always installs into ~/Downloads — safe to re-run.
 set -e
+step() { printf "\\n\\033[1;36m[%s]\\033[0m %s\\n" "$1" "$2"; }
+ok()   { printf "    \\033[1;32m✓\\033[0m %s\\n" "$1"; }
+err()  { printf "    \\033[1;31m✗\\033[0m %s\\n" "$1"; }
+
 cd "$HOME/Downloads"
+LOG_DIR="$HOME/Downloads/breezecontrol-logs"
+mkdir -p "$LOG_DIR"
+BRIDGE_LOG="$LOG_DIR/bridge.log"
+WEB_LOG="$LOG_DIR/web.log"
+
+step 1 "Installing Homebrew + Python + Node (skipped if present)"
 if ! command -v brew >/dev/null 2>&1; then /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; fi
 brew list python@3.11 >/dev/null 2>&1 || brew install python@3.11
 brew list node        >/dev/null 2>&1 || brew install node
-rm -rf "${REPO_DIR}" breezecontrol.zip
+
+step 2 "Downloading project ZIP from GitHub"
+rm -f breezecontrol.zip
 curl -L "${REPO_ZIP}" -o breezecontrol.zip
-unzip -oq breezecontrol.zip
-cd "${REPO_DIR}"
+
+step 3 "Extracting to a temp folder, then atomically moving into place"
+TMP_EXTRACT="$(mktemp -d "$HOME/Downloads/_bc_extract_XXXXXX")"
+unzip -oq breezecontrol.zip -d "$TMP_EXTRACT"
+EXTRACTED="$(find "$TMP_EXTRACT" -mindepth 1 -maxdepth 1 -type d | head -n1)"
+if [ -z "$EXTRACTED" ]; then err "extraction failed — no folder inside ZIP"; exit 1; fi
+FINAL_DIR="$HOME/Downloads/${REPO_DIR}"
+rm -rf "$FINAL_DIR"
+mv "$EXTRACTED" "$FINAL_DIR"
+rm -rf "$TMP_EXTRACT"
+cd "$FINAL_DIR"
 PROJECT_ROOT="$PWD"
-cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
+ok "project root: $PROJECT_ROOT"
+
+step 4 "Creating Python venv + installing bridge requirements"
+cd bridge
 BRIDGE_PATH="$PWD"
-osascript -e 'tell application "Terminal" to do script "cd \\"'"$BRIDGE_PATH"'\\" && source .venv/bin/activate && python3 omnipoint_bridge.py"'
-cd "$PROJECT_ROOT" && npm install && npm run dev`,
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip >/dev/null
+pip install -r requirements.txt
+
+step 5 "Launching bridge daemon in a NEW Terminal tab (venv pre-activated)"
+osascript -e 'tell application "Terminal" to do script "cd \\"'"$BRIDGE_PATH"'\\" && source .venv/bin/activate && echo bridge cwd: $(pwd) && python3 omnipoint_bridge.py 2>&1 | tee \\"'"$BRIDGE_LOG"'\\""'
+
+step 6 "Installing web app dependencies"
+cd "$PROJECT_ROOT"
+npm install
+
+step 7 "Starting Vite dev server in background (log: $WEB_LOG)"
+( npm run dev >"$WEB_LOG" 2>&1 & )
+
+step 8 "Waiting for bridge (ws://127.0.0.1:8765) and web app (http://localhost:8080)"
+BRIDGE_UP=0; WEB_UP=0; WEB_URL="http://localhost:8080"
+for i in $(seq 1 60); do
+  if [ $BRIDGE_UP -eq 0 ] && (echo > /dev/tcp/127.0.0.1/8765) >/dev/null 2>&1; then BRIDGE_UP=1; ok "bridge reachable on ws://127.0.0.1:8765"; fi
+  if [ $WEB_UP -eq 0 ]; then for p in 8080 5173 3000; do if curl -sf "http://localhost:$p" -o /dev/null --max-time 1; then WEB_UP=1; WEB_URL="http://localhost:$p"; ok "web app reachable on $WEB_URL"; break; fi; done; fi
+  [ $BRIDGE_UP -eq 1 ] && [ $WEB_UP -eq 1 ] && break
+  sleep 1
+done
+echo ""
+echo "============================================================"
+[ $BRIDGE_UP -eq 1 ] && echo "  BRIDGE : ws://127.0.0.1:8765   (log: $BRIDGE_LOG)" || echo "  BRIDGE : NOT REACHABLE — see $BRIDGE_LOG"
+[ $WEB_UP -eq 1 ]    && echo "  WEB    : $WEB_URL   (log: $WEB_LOG)"                || echo "  WEB    : NOT REACHABLE — see $WEB_LOG"
+echo "============================================================"
+[ $WEB_UP -eq 1 ] && open "$WEB_URL" || true`,
+
   linux: `# === BreezeControl one-shot installer (Linux — Debian/Ubuntu/Kali) ===
 # Always installs into ~/Downloads — safe to re-run.
 set -e
+step() { printf "\\n\\033[1;36m[%s]\\033[0m %s\\n" "$1" "$2"; }
+ok()   { printf "    \\033[1;32m✓\\033[0m %s\\n" "$1"; }
+err()  { printf "    \\033[1;31m✗\\033[0m %s\\n" "$1"; }
+
 mkdir -p "$HOME/Downloads" && cd "$HOME/Downloads"
+LOG_DIR="$HOME/Downloads/breezecontrol-logs"
+mkdir -p "$LOG_DIR"
+BRIDGE_LOG="$LOG_DIR/bridge.log"
+WEB_LOG="$LOG_DIR/web.log"
+
+step 1 "Installing system dependencies via apt"
 sudo apt update && sudo apt install -y python3 python3-venv python3-pip nodejs npm git curl unzip
-rm -rf "${REPO_DIR}" breezecontrol.zip
+
+step 2 "Downloading project ZIP from GitHub"
+rm -f breezecontrol.zip
 curl -L "${REPO_ZIP}" -o breezecontrol.zip
-unzip -oq breezecontrol.zip
-cd "${REPO_DIR}"
+
+step 3 "Extracting to a temp folder, then atomically moving into place"
+TMP_EXTRACT="$(mktemp -d "$HOME/Downloads/_bc_extract_XXXXXX")"
+unzip -oq breezecontrol.zip -d "$TMP_EXTRACT"
+EXTRACTED="$(find "$TMP_EXTRACT" -mindepth 1 -maxdepth 1 -type d | head -n1)"
+if [ -z "$EXTRACTED" ]; then err "extraction failed — no folder inside ZIP"; exit 1; fi
+FINAL_DIR="$HOME/Downloads/${REPO_DIR}"
+rm -rf "$FINAL_DIR"
+mv "$EXTRACTED" "$FINAL_DIR"
+rm -rf "$TMP_EXTRACT"
+cd "$FINAL_DIR"
 PROJECT_ROOT="$PWD"
-cd bridge && python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
-(python3 omnipoint_bridge.py >/tmp/breezebridge.log 2>&1 &) && echo "bridge started in background — log: /tmp/breezebridge.log"
-cd "$PROJECT_ROOT" && npm install && npm run dev`,
+ok "project root: $PROJECT_ROOT"
+
+step 4 "Creating Python venv + installing bridge requirements"
+cd bridge
+BRIDGE_PATH="$PWD"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip >/dev/null
+pip install -r requirements.txt
+
+step 5 "Launching bridge daemon in background (log: $BRIDGE_LOG)"
+( cd "$BRIDGE_PATH" && source .venv/bin/activate && python3 omnipoint_bridge.py >"$BRIDGE_LOG" 2>&1 & )
+
+step 6 "Installing web app dependencies"
+cd "$PROJECT_ROOT"
+npm install
+
+step 7 "Starting Vite dev server in background (log: $WEB_LOG)"
+( npm run dev >"$WEB_LOG" 2>&1 & )
+
+step 8 "Waiting for bridge (ws://127.0.0.1:8765) and web app (http://localhost:8080)"
+BRIDGE_UP=0; WEB_UP=0; WEB_URL="http://localhost:8080"
+for i in $(seq 1 60); do
+  if [ $BRIDGE_UP -eq 0 ] && (echo > /dev/tcp/127.0.0.1/8765) >/dev/null 2>&1; then BRIDGE_UP=1; ok "bridge reachable on ws://127.0.0.1:8765"; fi
+  if [ $WEB_UP -eq 0 ]; then for p in 8080 5173 3000; do if curl -sf "http://localhost:$p" -o /dev/null --max-time 1; then WEB_UP=1; WEB_URL="http://localhost:$p"; ok "web app reachable on $WEB_URL"; break; fi; done; fi
+  [ $BRIDGE_UP -eq 1 ] && [ $WEB_UP -eq 1 ] && break
+  sleep 1
+done
+echo ""
+echo "============================================================"
+[ $BRIDGE_UP -eq 1 ] && echo "  BRIDGE : ws://127.0.0.1:8765   (log: $BRIDGE_LOG)" || echo "  BRIDGE : NOT REACHABLE — see $BRIDGE_LOG"
+[ $WEB_UP -eq 1 ]    && echo "  WEB    : $WEB_URL   (log: $WEB_LOG)"                || echo "  WEB    : NOT REACHABLE — see $WEB_LOG"
+echo "============================================================"
+if [ $WEB_UP -eq 1 ]; then xdg-open "$WEB_URL" >/dev/null 2>&1 || true; fi`,
 };
 
 const buildGuide = (os: OS): Section[] => {
