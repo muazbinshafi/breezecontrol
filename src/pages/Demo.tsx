@@ -13,6 +13,7 @@ import { ThemeSettings } from "@/components/ThemeSettings";
 import { PaintToolbar } from "@/components/omnipoint/PaintToolbar";
 import { useBrowserCursor } from "@/hooks/useBrowserCursor";
 import { CalibrationWizard } from "@/components/omnipoint/CalibrationWizard";
+import { LiveCalibrationPanel, loadDetectionFloors } from "@/components/omnipoint/LiveCalibrationPanel";
 import { PerformanceHUD } from "@/components/omnipoint/PerformanceHUD";
 import { GestureTour } from "@/components/omnipoint/GestureTour";
 import { PinchConfidenceOverlay } from "@/components/omnipoint/PinchConfidenceOverlay";
