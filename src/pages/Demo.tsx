@@ -28,6 +28,7 @@ const Demo = () => {
   const [error, setError] = useState<string | null>(null);
   const [troubleshooterOpen, setTroubleshooterOpen] = useState(false);
   const [calibrationOpen, setCalibrationOpen] = useState(false);
+  const [livePanelOpen, setLivePanelOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [pinchOverlayOn, setPinchOverlayOn] = useState(false);
 
