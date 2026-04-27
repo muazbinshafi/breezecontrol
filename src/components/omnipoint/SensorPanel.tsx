@@ -31,6 +31,7 @@ export function SensorPanel({ onSetOrigin }: Props) {
           width={1280}
           height={720}
           className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ transform: "scaleX(-1)" }}
         />
         {/* Corner brackets */}
         <CornerBrackets />

@@ -96,13 +96,19 @@ $ProjectRoot = $PWD.Path
 if (-not (Test-Path (Join-Path $ProjectRoot 'bridge'))) { Write-Host "ERROR: bridge folder missing after extraction" -ForegroundColor Red; exit 1 }
 Write-Host "    project root: $ProjectRoot" -ForegroundColor DarkGray
 
-Step 4 "Creating Python venv + installing bridge requirements"
-Set-Location bridge
-$BridgePath = $PWD.Path
+Step 4 "Creating Python venv + installing bridge requirements (absolute paths)"
+$BridgePath = Join-Path $ProjectRoot 'bridge'
+if (-not (Test-Path $BridgePath)) { Write-Host "ERROR: bridge folder not found at $BridgePath" -ForegroundColor Red; exit 1 }
+$RequirementsFile = Join-Path $BridgePath 'requirements.txt'
+if (-not (Test-Path $RequirementsFile)) { Write-Host "ERROR: requirements.txt not found at $RequirementsFile" -ForegroundColor Red; exit 1 }
+Set-Location $BridgePath
 py -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
-python -m pip install --upgrade pip | Out-Null
-pip install -r requirements.txt
+$VenvActivate = Join-Path $BridgePath '.venv\\Scripts\\Activate.ps1'
+$VenvPython   = Join-Path $BridgePath '.venv\\Scripts\\python.exe'
+if (-not (Test-Path $VenvPython)) { Write-Host "ERROR: venv python missing at $VenvPython" -ForegroundColor Red; exit 1 }
+& $VenvActivate
+& $VenvPython -m pip install --upgrade pip | Out-Null
+& $VenvPython -m pip install -r $RequirementsFile
 
 Step 5 "Launching bridge daemon in a NEW PowerShell window (venv pre-activated)"
 $BridgeCmd = "Set-Location '$BridgePath'; & '$BridgePath\\.venv\\Scripts\\Activate.ps1'; Write-Host 'bridge cwd:' (Get-Location); python omnipoint_bridge.py *>&1 | Tee-Object -FilePath '$BridgeLog'"
