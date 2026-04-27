@@ -11,6 +11,7 @@ import Demo from "./pages/Demo.tsx";
 import GestureGuide from "./pages/GestureGuide.tsx";
 import Install from "./pages/Install.tsx";
 import BridgeInstall from "./pages/BridgeInstall.tsx";
+import BridgeGuideOS from "./pages/BridgeGuideOS.tsx";
 import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Account from "./pages/Account.tsx";
@@ -31,6 +32,7 @@ const AppRoutes = () => {
       <Route path="/demo" element={<Demo />} />
       <Route path="/install" element={<Install />} />
       <Route path="/bridge" element={<BridgeInstall />} />
+      <Route path="/bridge/:os" element={<BridgeGuideOS />} />
       <Route
         path="/account"
         element={
