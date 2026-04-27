@@ -130,10 +130,10 @@ const buildGuide = (os: OS): Section[] => {
     highlight: true,
     intro:
       os === "windows"
-        ? "Open PowerShell in ANY folder (e.g. Downloads) and paste the block below. It installs Python + Node via winget, downloads & extracts the project ZIP from GitHub, sets up the venv, installs all deps, opens the bridge in a second window, and starts the web app. Nothing else required — skip steps 1–4 if this works."
+        ? "Open PowerShell anywhere and paste the block below. It auto-jumps to your Downloads folder, installs Python + Node via winget, downloads & extracts the project ZIP from GitHub (cleaning any previous copy), sets up the venv, opens the bridge in a second window, and starts the web app. Safe to re-run."
         : os === "macos"
-          ? "Open Terminal in ANY folder and paste the block below. It installs Homebrew/Python/Node if missing, downloads & unzips the project from GitHub, sets up the venv, opens the bridge in a new Terminal tab, and starts the web app."
-          : "Open a terminal in ANY folder and paste the block below. It installs all OS deps via apt, downloads & unzips the project from GitHub, sets up the venv, runs the bridge in the background, and starts the web app.",
+          ? "Open Terminal anywhere and paste the block below. It auto-jumps to ~/Downloads, installs Homebrew/Python/Node if missing, downloads & unzips the project (cleaning any previous copy), sets up the venv, opens the bridge in a new Terminal tab, and starts the web app. Safe to re-run."
+          : "Open a terminal anywhere and paste the block below. It auto-jumps to ~/Downloads, installs all OS deps via apt, downloads & unzips the project (cleaning any previous copy), runs the bridge in the background, and starts the web app. Safe to re-run.",
     steps: [
       {
         label: "Paste this entire block — it does everything end-to-end:",
