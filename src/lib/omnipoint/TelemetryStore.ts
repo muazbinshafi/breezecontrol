@@ -59,6 +59,15 @@ export interface TelemetrySnapshot {
   landmarks: HandLandmarks;
   /** True when the engine has dropped into adaptive precision-mode (hand near-still). */
   precisionMode: boolean;
+  /** Last daemon status snapshot — populated after a successful probe. */
+  daemon: {
+    version?: string;
+    os?: string;
+    sessionType?: string;
+    screen?: { w: number; h: number };
+    uinput?: boolean;
+    evdev?: boolean;
+  } | null;
 }
 
 const initial: TelemetrySnapshot = {
@@ -85,6 +94,7 @@ const initial: TelemetrySnapshot = {
   pinchDistance: 0,
   landmarks: [],
   precisionMode: false,
+  daemon: null,
 };
 
 let snapshot: TelemetrySnapshot = { ...initial };
