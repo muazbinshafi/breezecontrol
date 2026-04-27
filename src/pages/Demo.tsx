@@ -271,6 +271,10 @@ const Demo = () => {
     engineRef.current?.setOrigin();
   }, []);
 
+  const handleForceReset = useCallback(() => {
+    engineRef.current?.resetState();
+  }, []);
+
   const showInit = !initialized;
 
   return (
