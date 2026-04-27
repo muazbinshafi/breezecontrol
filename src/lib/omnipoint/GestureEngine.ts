@@ -286,7 +286,7 @@ export class GestureEngine {
       });
     }
 
-    const sensorLost = confidence < 0.5;
+    const sensorLost = result.landmarks.length === 0;
     TelemetryStore.set({
       fps: this.frameTimes.length,
       inferenceMs: inferMs,
