@@ -387,15 +387,21 @@ function ToolbarButton({
   onClick,
   icon,
   children,
+  active,
 }: {
   onClick: () => void;
   icon: React.ReactNode;
   children: React.ReactNode;
+  active?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="font-mono text-[10px] tracking-[0.3em] px-3 h-8 inline-flex items-center gap-1.5 border hairline text-muted-foreground hover:text-foreground bg-card/60 rounded-md"
+      className={`font-mono text-[10px] tracking-[0.3em] px-3 h-8 inline-flex items-center gap-1.5 border rounded-md ${
+        active
+          ? "border-primary text-primary bg-primary/10"
+          : "hairline text-muted-foreground hover:text-foreground bg-card/60"
+      }`}
     >
       {icon}
       {children}
