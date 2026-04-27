@@ -338,6 +338,9 @@ export function DemoTopBar({
                 <DropdownMenuItem onClick={onOpenCalibration}>
                   <Wand2 className="w-4 h-4 mr-2" /> Calibrate
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={onOpenLivePanel}>
+                  <SlidersHorizontal className="w-4 h-4 mr-2" /> Tune & diagnostics
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/">
