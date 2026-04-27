@@ -21,6 +21,7 @@ import {
   HelpCircle,
   Home,
   MoreHorizontal,
+  SlidersHorizontal,
   Wand2,
   Wifi,
   WifiOff,
