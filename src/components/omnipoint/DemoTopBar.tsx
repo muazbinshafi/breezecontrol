@@ -21,6 +21,7 @@ import {
   HelpCircle,
   Home,
   MoreHorizontal,
+  SlidersHorizontal,
   Wand2,
   Wifi,
   WifiOff,
@@ -64,6 +65,8 @@ interface Props {
   // overflow actions
   onOpenTour: () => void;
   onOpenCalibration: () => void;
+  onOpenLivePanel: () => void;
+  livePanelOpen: boolean;
 }
 
 export function DemoTopBar({
@@ -82,6 +85,8 @@ export function DemoTopBar({
   onOpenTroubleshooter,
   onOpenTour,
   onOpenCalibration,
+  onOpenLivePanel,
+  livePanelOpen,
 }: Props) {
   const t = useTelemetry();
 
@@ -295,6 +300,13 @@ export function DemoTopBar({
             >
               CALIBRATE
             </ToolbarButton>
+            <ToolbarButton
+              onClick={onOpenLivePanel}
+              icon={<SlidersHorizontal className="w-3.5 h-3.5" />}
+              active={livePanelOpen}
+            >
+              TUNE
+            </ToolbarButton>
             <Link
               to="/"
               className="font-mono text-[10px] tracking-[0.3em] px-3 h-8 inline-flex items-center gap-1.5 border hairline text-muted-foreground hover:text-foreground bg-card/60 rounded-md"
@@ -325,6 +337,9 @@ export function DemoTopBar({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onOpenCalibration}>
                   <Wand2 className="w-4 h-4 mr-2" /> Calibrate
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onOpenLivePanel}>
+                  <SlidersHorizontal className="w-4 h-4 mr-2" /> Tune & diagnostics
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -375,15 +390,21 @@ function ToolbarButton({
   onClick,
   icon,
   children,
+  active,
 }: {
   onClick: () => void;
   icon: React.ReactNode;
   children: React.ReactNode;
+  active?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="font-mono text-[10px] tracking-[0.3em] px-3 h-8 inline-flex items-center gap-1.5 border hairline text-muted-foreground hover:text-foreground bg-card/60 rounded-md"
+      className={`font-mono text-[10px] tracking-[0.3em] px-3 h-8 inline-flex items-center gap-1.5 border rounded-md ${
+        active
+          ? "border-primary text-primary bg-primary/10"
+          : "hairline text-muted-foreground hover:text-foreground bg-card/60"
+      }`}
     >
       {icon}
       {children}

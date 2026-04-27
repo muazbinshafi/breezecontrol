@@ -156,7 +156,14 @@ export class GestureEngine {
     TelemetryStore.set({ precisionMode: stillness > 0.6 });
   }
 
-  async init(onProgress?: (msg: string) => void) {
+  async init(
+    onProgress?: (msg: string) => void,
+    floors?: {
+      minHandDetectionConfidence?: number;
+      minHandPresenceConfidence?: number;
+      minTrackingConfidence?: number;
+    },
+  ) {
     onProgress?.("Loading vision fileset...");
     const fileset = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm",
@@ -169,10 +176,11 @@ export class GestureEngine {
       runningMode: "VIDEO" as const,
       // Lowered floors: 0.5 was too aggressive — slightly off-axis or
       // dim-lit hands were rejected entirely. 0.3 still cuts background
-      // noise but recovers far more weak/distant detections.
-      minHandDetectionConfidence: 0.3,
-      minHandPresenceConfidence: 0.3,
-      minTrackingConfidence: 0.3,
+      // noise but recovers far more weak/distant detections. The user
+      // can override these from the Live Calibration panel.
+      minHandDetectionConfidence: floors?.minHandDetectionConfidence ?? 0.3,
+      minHandPresenceConfidence: floors?.minHandPresenceConfidence ?? 0.3,
+      minTrackingConfidence: floors?.minTrackingConfidence ?? 0.3,
     };
     const modelAssetPath =
       "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
@@ -181,7 +189,7 @@ export class GestureEngine {
         baseOptions: { modelAssetPath, delegate: "GPU" },
         ...baseOpts,
       });
-      console.info("[OmniPoint] HandLandmarker initialized (GPU delegate)");
+      console.info("[OmniPoint] HandLandmarker initialized (GPU delegate)", baseOpts);
     } catch (gpuErr) {
       console.warn("[OmniPoint] GPU delegate failed, falling back to CPU:", gpuErr);
       onProgress?.("GPU unavailable — falling back to CPU...");
@@ -189,7 +197,7 @@ export class GestureEngine {
         baseOptions: { modelAssetPath, delegate: "CPU" },
         ...baseOpts,
       });
-      console.info("[OmniPoint] HandLandmarker initialized (CPU delegate)");
+      console.info("[OmniPoint] HandLandmarker initialized (CPU delegate)", baseOpts);
     }
     onProgress?.("Sensor ready.");
   }
@@ -214,6 +222,45 @@ export class GestureEngine {
     if (!this.smoothedIndex) return;
     this.originOffset.x = this.smoothedIndex[0] - 0.5;
     this.originOffset.y = this.smoothedIndex[1] - 0.5;
+  }
+
+  /**
+   * Hard-reset all transient detection state. Useful when the calibration UI
+   * detects the engine is "stuck" in SENSOR LOST / searching — clears every
+   * filter and the click state machine so the next frame starts fresh.
+   */
+  resetState() {
+    this.fThumb.reset();
+    this.fIndex.reset();
+    this.fIndexMcp.reset();
+    this.fWrist.reset();
+    this.fMiddleTip.reset();
+    this.fCursor.reset();
+    this.smoothedThumb = null;
+    this.smoothedIndex = null;
+    this.prevIndex = null;
+    this.prevPinch = null;
+    this.prevPinchT = 0;
+    this.pinchVelocity = 0;
+    this.cursorSpeed = 0;
+    this.clickState = "IDLE";
+    this.pinchStartTs = 0;
+    this.gestureCandidate = "none";
+    this.gestureCandidateCount = 0;
+    this.committedGesture = "none";
+    this.lastScrollY = null;
+    this.lastVideoTime = -1;
+    TelemetryStore.set({
+      sensorLost: false,
+      handPresent: false,
+      handedness: "none",
+      fingersExtended: [false, false, false, false, false],
+      fingerCount: 0,
+      pinchDistance: 0,
+      gesture: "none",
+      landmarks: [],
+      confidence: 0,
+    });
   }
 
 

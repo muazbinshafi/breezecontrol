@@ -13,6 +13,7 @@ import { ThemeSettings } from "@/components/ThemeSettings";
 import { PaintToolbar } from "@/components/omnipoint/PaintToolbar";
 import { useBrowserCursor } from "@/hooks/useBrowserCursor";
 import { CalibrationWizard } from "@/components/omnipoint/CalibrationWizard";
+import { LiveCalibrationPanel, loadDetectionFloors } from "@/components/omnipoint/LiveCalibrationPanel";
 import { PerformanceHUD } from "@/components/omnipoint/PerformanceHUD";
 import { GestureTour } from "@/components/omnipoint/GestureTour";
 import { PinchConfidenceOverlay } from "@/components/omnipoint/PinchConfidenceOverlay";
@@ -27,6 +28,7 @@ const Demo = () => {
   const [error, setError] = useState<string | null>(null);
   const [troubleshooterOpen, setTroubleshooterOpen] = useState(false);
   const [calibrationOpen, setCalibrationOpen] = useState(false);
+  const [livePanelOpen, setLivePanelOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [pinchOverlayOn, setPinchOverlayOn] = useState(false);
 
@@ -179,7 +181,7 @@ const Demo = () => {
       await engine.init((m) => {
         setStatus(m);
         setProgress((p) => Math.min(95, p + 12));
-      });
+      }, loadDetectionFloors());
       setProgress(100);
       setStatus("Sensor online.");
       engine.start();
@@ -269,6 +271,10 @@ const Demo = () => {
     engineRef.current?.setOrigin();
   }, []);
 
+  const handleForceReset = useCallback(() => {
+    engineRef.current?.resetState();
+  }, []);
+
   const showInit = !initialized;
 
   return (
@@ -291,6 +297,8 @@ const Demo = () => {
             onOpenTroubleshooter={() => setTroubleshooterOpen(true)}
             onOpenTour={() => setTourOpen(true)}
             onOpenCalibration={() => setCalibrationOpen(true)}
+            onOpenLivePanel={() => setLivePanelOpen((v) => !v)}
+            livePanelOpen={livePanelOpen}
           />
         )}
         <div
@@ -374,6 +382,15 @@ const Demo = () => {
             forceOpen={tourOpen}
             onClose={() => setTourOpen(false)}
             autoShow
+          />
+        )}
+        {!showInit && (
+          <LiveCalibrationPanel
+            open={livePanelOpen}
+            onClose={() => setLivePanelOpen(false)}
+            config={config}
+            setConfig={setConfig}
+            onForceReset={handleForceReset}
           />
         )}
       </main>
