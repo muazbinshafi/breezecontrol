@@ -53,6 +53,7 @@ interface Section {
 const REPO_URL = "https://github.com/muazbinshafi/airtouch-v8";
 const REPO_CLONE = "git clone https://github.com/muazbinshafi/airtouch-v8.git";
 const REPO_ZIP = "https://github.com/muazbinshafi/airtouch-v8/archive/refs/heads/main.zip";
+const BRIDGE_ASSET_BASE = "https://breezecontrol.lovable.app/bridge-assets";
 const REPO_DIR = "airtouch-v8-main";
 
 // One-shot scripts that automate EVERYTHING from scratch:
